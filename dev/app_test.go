@@ -2,9 +2,7 @@ package dev
 
 import (
 	"testing"
-
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/vektra/neko"
 )
 
@@ -14,4 +12,6 @@ func TestApp(t *testing.T) {
 	n.It("verifies sanity", func() {
 		assert.Equal(t, 1, 1)
 	})
+
+  n.Meow()
 }
