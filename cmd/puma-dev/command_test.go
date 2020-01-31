@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -37,7 +36,7 @@ func TestCommand_link_noArgs(t *testing.T) {
 		assert.Equal(t, expected, actual)
 	})
 
-	RemoveApp("my-test-puma-dev-application")
+	RemoveAppSymlinkOrFail(t, "my-test-puma-dev-application")
 }
 
 func TestCommand_link_withNameOverride(t *testing.T) {
@@ -53,7 +52,7 @@ func TestCommand_link_withNameOverride(t *testing.T) {
 		assert.Equal(t, "+ App 'anothername' created, linked to '/tmp/puma-dev-example-command-link-noargs'\n", actual)
 	})
 
-	RemoveApp("anothername")
+	RemoveAppSymlinkOrFail(t, "anothername")
 }
 
 func TestCommand_link_invalidDirectory(t *testing.T) {
@@ -65,11 +64,15 @@ func TestCommand_link_invalidDirectory(t *testing.T) {
 }
 
 func TestCommand_link_reassignExistingApp(t *testing.T) {
-	appDir1 := "/tmp/puma-dev-test-command-link-reassign-existing-app-one"
-	appDir2 := "/tmp/puma-dev-test-command-link-reassign-existing-app-two"
+	appAlias := "apptastic"
+	appDir1 := MakeDirectoryOrFail(t, "/tmp/puma-dev-test-command-link-reassign-existing-app-one")
+	appDir2 := MakeDirectoryOrFail(t, "/tmp/puma-dev-test-command-link-reassign-existing-app-two")
+
+	defer RemoveDirectoryOrFail(t, appDir1)
+	defer RemoveDirectoryOrFail(t, appDir2)
+	defer RemoveAppSymlinkOrFail(t, appAlias)
 
 	StubFlagArgs([]string{"link", "-n", "existing-app", appDir1})
-	os.Mkdir(appDir1, 0755)
 	actual1 := WithStdoutCaptured(func() {
 		if err := command(); err != nil {
 			assert.Fail(t, err.Error())
@@ -79,7 +82,6 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 	assert.Equal(t, expected1, actual1)
 
 	StubFlagArgs([]string{"link", "-n", "existing-app", appDir2})
-	os.Mkdir(appDir2, 0755)
 	actual2 := WithStdoutCaptured(func() {
 		if err := command(); err != nil {
 			assert.Fail(t, err.Error())
@@ -87,14 +89,4 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 	})
 	expected2 := fmt.Sprintf("! App 'existing-app' already exists, pointed at '%s'\n", appDir1)
 	assert.Equal(t, expected2, actual2)
-
-	RemoveApp("existing-app")
-
-	if err1 := os.RemoveAll(appDir1); err1 != nil {
-		assert.Fail(t, err1.Error())
-	}
-
-	if err2 := os.RemoveAll(appDir2); err2 != nil {
-		assert.Fail(t, err2.Error())
-	}
 }

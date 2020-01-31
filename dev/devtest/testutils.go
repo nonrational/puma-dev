@@ -6,8 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/puma/puma-dev/homedir"
+	"github.com/stretchr/testify/assert"
 )
 
 // StubFlagArgs overrides command arguments to pretend as if puma-dev was executed at the commandline.
@@ -46,6 +48,21 @@ func WithStdoutCaptured(f func()) string {
 	return out
 }
 
+// RemoveDirectoryOrFail removes a directory (and its contents) or fails the test.
+func RemoveDirectoryOrFail(t *testing.T, path string) {
+	if err := os.RemoveAll(path); err != nil {
+		assert.Fail(t, err.Error())
+	}
+}
+
+// MakeDirectoryOrFail makes a directory or fails the test, returning the path of the directory that was created.
+func MakeDirectoryOrFail(t *testing.T, path string) string {
+	if err := os.Mkdir(path, 0755); err != nil {
+		assert.Fail(t, err.Error())
+	}
+	return path
+}
+
 // WithWorkingDirectory executes the passed function within the context of
 // the passed working directory path.
 func WithWorkingDirectory(path string, mkdir bool, f func()) {
@@ -64,8 +81,8 @@ func WithWorkingDirectory(path string, mkdir bool, f func()) {
 	os.Chdir(originalPath)
 }
 
-// RemoveApp deletes a symlink at ~/.puma-dev/{name} or panics.
-func RemoveApp(name string) {
+// RemoveAppSymlinkOrFail deletes a symlink at ~/.puma-dev/{name} or fails the test.
+func RemoveAppSymlinkOrFail(t *testing.T, name string) {
 	fDir := "~/.puma-dev"
 	path, err := homedir.Expand(filepath.Join(fDir, name))
 	if err != nil {
