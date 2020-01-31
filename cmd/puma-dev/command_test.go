@@ -77,8 +77,8 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 			assert.Fail(t, err.Error())
 		}
 	})
-	expected1 := fmt.Sprintf("+ App '%s' created, linked to '%s'\n", appAlias, appDir1)
-	assert.Equal(t, expected1, actual1)
+
+	assert.Equal(t, fmt.Sprintf("+ App '%s' created, linked to '%s'\n", appAlias, appDir1), actual1)
 
 	StubFlagArgs([]string{"link", "-n", appAlias, appDir2})
 	actual2 := WithStdoutCaptured(func() {
@@ -86,6 +86,6 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 			assert.Fail(t, err.Error())
 		}
 	})
-	expected2 := fmt.Sprintf("! App '%s' already exists, pointed at '%s'\n", appAlias, appDir1)
-	assert.Equal(t, expected2, actual2)
+
+	assert.Equal(t, fmt.Sprintf("! App '%s' already exists, pointed at '%s'\n", appAlias, appDir1), actual2)
 }
