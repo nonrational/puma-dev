@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"flag"
-	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/puma/puma-dev/homedir"
+	"github.com/stretchr/testify/assert"
 )
 
 func StubFlagArgs(args []string) {
@@ -15,16 +17,44 @@ func StubFlagArgs(args []string) {
 	flag.Parse()
 }
 
-func StubCwd() string {
-	var path = "/tmp/puma-dev-command-test-cwd"
+func WithStdoutCaptured(f func()) string {
+	osStdout := os.Stdout
+	r, w, err := os.Pipe()
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0777)
+	if err != nil {
+		panic(err)
 	}
 
-	os.Chdir(path)
+	os.Stdout = w
 
-	return path
+	outC := make(chan string)
+
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	f()
+
+	w.Close()
+	os.Stdout = osStdout
+	out := <-outC
+
+	return out
+}
+
+func WithWorkingDirectory(path string, f func()) {
+	// deleteDirectoryAfterwards := false
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0755)
+	}
+
+	originalPath, _ := os.Getwd()
+
+	os.Chdir(path)
+	f()
+	os.Chdir(originalPath)
 }
 
 func RemovePumaDevSymlink(name string) {
@@ -39,27 +69,29 @@ func RemovePumaDevSymlink(name string) {
 	}
 }
 
-// func RemovePumaDevCommandTestLinks() error {
-// 	splatSymlinks, err := homedir.Expand(filepath.Join(*fDir, "puma-dev-command-test*"))
-//
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	files, err := filepath.Glob(splatSymlinks)
-//
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	for _, f := range files {
-// 		if err := os.Remove(f); err != nil {
-// 			panic(err)
-// 		}
-// 	}
-//
-// 	return nil
-// }
+/**
+func RemovePumaDevCommandTestLinks() error {
+	splatSymlinks, err := homedir.Expand(filepath.Join(*fDir, "puma-dev-command-test*"))
+
+	if err != nil {
+		return err
+	}
+
+	files, err := filepath.Glob(splatSymlinks)
+
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if err := os.Remove(f); err != nil {
+			panic(err)
+		}
+	}
+
+	return nil
+}
+*/
 
 func TestCommand_noargs(t *testing.T) {
 	StubFlagArgs(nil)
@@ -81,28 +113,32 @@ func TestCommand_badargs(t *testing.T) {
 	}
 }
 
-func ExampleCommand_link_noargs() {
+func TestCommand_link_noargs(t *testing.T) {
 	StubFlagArgs([]string{"link"})
-	cwd := StubCwd()
 
-	command()
+	WithWorkingDirectory("/tmp/puma-dev-example-command-link-noargs", func() {
+		actual := WithStdoutCaptured(func() {
+			command()
+		})
 
-	RemovePumaDevSymlink(filepath.Base(cwd))
+		assert.Equal(t, "+ App 'puma-dev-example-command-link-noargs' created, linked to '/private/tmp/puma-dev-example-command-link-noargs'\n", actual)
+	})
 
-	// Output:
-	// + App 'puma-dev-command-test-cwd' created, linked to '/private/tmp/puma-dev-command-test-cwd'
+	RemovePumaDevSymlink("puma-dev-example-command-link-noargs")
 }
 
-func ExampleCommand_link_namedargs() {
-	cwd := StubCwd()
-	StubFlagArgs([]string{"link", cwd, "-n", "anothername"})
+func TestCommand_link_namedargs(t *testing.T) {
+	tmpCwd := "/tmp/puma-dev-example-command-link-noargs"
 
-	err := command()
+	StubFlagArgs([]string{"link", "-n", "anothername", tmpCwd})
 
-	fmt.Println(err)
+	WithWorkingDirectory(tmpCwd, func() {
+		actual := WithStdoutCaptured(func() {
+			command()
+		})
 
-	// RemovePumaDevSymlink("anothername")
+		assert.Equal(t, "+ App 'anothername' created, linked to '/tmp/puma-dev-example-command-link-noargs'\n", actual)
+	})
 
-	// Output:
-	// + App 'anothername' created, linked to '/private/tmp/puma-dev-command-test-cwd'
+	RemovePumaDevSymlink("anothername")
 }
