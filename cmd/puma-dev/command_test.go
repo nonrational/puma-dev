@@ -6,7 +6,6 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	. "github.com/puma/puma-dev/dev/devtest"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -72,21 +71,21 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 	defer RemoveDirectoryOrFail(t, appDir2)
 	defer RemoveAppSymlinkOrFail(t, appAlias)
 
-	StubFlagArgs([]string{"link", "-n", "existing-app", appDir1})
+	StubFlagArgs([]string{"link", "-n", appAlias, appDir1})
 	actual1 := WithStdoutCaptured(func() {
 		if err := command(); err != nil {
 			assert.Fail(t, err.Error())
 		}
 	})
-	expected1 := fmt.Sprintf("+ App 'existing-app' created, linked to '%s'\n", appDir1)
+	expected1 := fmt.Sprintf("+ App '%s' created, linked to '%s'\n", appAlias, appDir1)
 	assert.Equal(t, expected1, actual1)
 
-	StubFlagArgs([]string{"link", "-n", "existing-app", appDir2})
+	StubFlagArgs([]string{"link", "-n", appAlias, appDir2})
 	actual2 := WithStdoutCaptured(func() {
 		if err := command(); err != nil {
 			assert.Fail(t, err.Error())
 		}
 	})
-	expected2 := fmt.Sprintf("! App 'existing-app' already exists, pointed at '%s'\n", appDir1)
+	expected2 := fmt.Sprintf("! App '%s' already exists, pointed at '%s'\n", appAlias, appDir1)
 	assert.Equal(t, expected2, actual2)
 }
