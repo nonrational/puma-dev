@@ -1,77 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"flag"
 	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/puma/puma-dev/homedir"
+	homedir "github.com/mitchellh/go-homedir"
+	. "github.com/puma/puma-dev/dev/devtest"
+
 	"github.com/stretchr/testify/assert"
 )
-
-func StubFlagArgs(args []string) {
-	os.Args = append([]string{"puma-dev"}, args...)
-	flag.Parse()
-}
-
-func WithStdoutCaptured(f func()) string {
-	osStdout := os.Stdout
-	r, w, err := os.Pipe()
-
-	if err != nil {
-		panic(err)
-	}
-
-	os.Stdout = w
-
-	outC := make(chan string)
-
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	f()
-
-	w.Close()
-	os.Stdout = osStdout
-	out := <-outC
-
-	return out
-}
-
-func WithWorkingDirectory(path string, mkdir bool, f func()) {
-	// deleteDirectoryAfterwards := false
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if mkdir == true {
-			os.Mkdir(path, 0755)
-		} else {
-			panic(err)
-		}
-	}
-
-	originalPath, _ := os.Getwd()
-	os.Chdir(path)
-	f()
-	os.Chdir(originalPath)
-}
-
-func RemovePumaDevSymlink(name string) {
-	path, err := homedir.Expand(filepath.Join(*fDir, name))
-
-	if err != nil {
-		panic(err)
-	}
-
-	if err := os.Remove(path); err != nil {
-		panic(err)
-	}
-}
 
 func TestCommand_noCommandArg(t *testing.T) {
 	StubFlagArgs(nil)
@@ -88,15 +26,18 @@ func TestCommand_badCommandArg(t *testing.T) {
 func TestCommand_link_noArgs(t *testing.T) {
 	StubFlagArgs([]string{"link"})
 
-	WithWorkingDirectory("/tmp/puma-dev-example-command-link-noargs", true, func() {
+	appDir, _ := homedir.Expand("~/my-test-puma-dev-application")
+
+	WithWorkingDirectory(appDir, true, func() {
 		actual := WithStdoutCaptured(func() {
 			command()
 		})
 
-		assert.Equal(t, "+ App 'puma-dev-example-command-link-noargs' created, linked to '/private/tmp/puma-dev-example-command-link-noargs'\n", actual)
+		expected := fmt.Sprintf("+ App 'my-test-puma-dev-application' created, linked to '%s'\n", appDir)
+		assert.Equal(t, expected, actual)
 	})
 
-	RemovePumaDevSymlink("puma-dev-example-command-link-noargs")
+	RemoveApp("my-test-puma-dev-application")
 }
 
 func TestCommand_link_withNameOverride(t *testing.T) {
@@ -112,7 +53,7 @@ func TestCommand_link_withNameOverride(t *testing.T) {
 		assert.Equal(t, "+ App 'anothername' created, linked to '/tmp/puma-dev-example-command-link-noargs'\n", actual)
 	})
 
-	RemovePumaDevSymlink("anothername")
+	RemoveApp("anothername")
 }
 
 func TestCommand_link_invalidDirectory(t *testing.T) {
@@ -147,5 +88,13 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 	expected2 := fmt.Sprintf("! App 'existing-app' already exists, pointed at '%s'\n", appDir1)
 	assert.Equal(t, expected2, actual2)
 
-	RemovePumaDevSymlink("existing-app")
+	RemoveApp("existing-app")
+
+	if err1 := os.RemoveAll(appDir1); err1 != nil {
+		assert.Fail(t, err1.Error())
+	}
+
+	if err2 := os.RemoveAll(appDir2); err2 != nil {
+		assert.Fail(t, err2.Error())
+	}
 }
