@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	homedir "github.com/mitchellh/go-homedir"
 	. "github.com/puma/puma-dev/dev/devtest"
+
+	"github.com/mitchellh/go-homedir"
 	"github.com/stretchr/testify/assert"
 )
 
