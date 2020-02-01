@@ -1,5 +1,3 @@
-// +build !linux
-
 package launch
 
 /* Lovingly borrowed from https://github.com/sstephenson/launch_socket_server/blob/master/src/launch/socket.go */
