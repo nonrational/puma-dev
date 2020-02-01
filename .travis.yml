@@ -1,10 +1,7 @@
-dist: trusty
-
 language: go
 
 go:
   - "1.10.x"
-  - master
 
 os:
   - linux
@@ -15,3 +12,8 @@ install:
 
 script:
   - make test
+
+before_install:
+  - env
+before_script:
+  - env
