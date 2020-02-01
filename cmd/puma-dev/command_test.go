@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/puma/puma-dev/dev/devtest"
+	// !!!!! DO NOT MERGE UPSTREAM !!!!!!!!!!!!!!!!!!
+	. "github.com/nonrational/puma-dev/dev/devtest"
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/stretchr/testify/assert"

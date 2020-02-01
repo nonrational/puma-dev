@@ -18,7 +18,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/puma/puma-dev/httpu/internal"
+	// !!!!! DO NOT MERGE UPSTREAM !!!!!!!!!!!!!!!!!!
+	"github.com/nonrational/puma-dev/httpu/internal"
+	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 )
 
 // ErrLineTooLong is returned when reading request or response bodies
