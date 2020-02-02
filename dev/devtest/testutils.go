@@ -32,16 +32,12 @@ func EnsurePumaDevDirectory() {
 		panic(err)
 	}
 
-	fi, err := os.Stat(path)
-
-	if err != nil {
-		panic(err)
+	if fi, err := os.Stat(path); err == nil && fi.IsDir() {
+		return
 	}
 
-	if !fi.IsDir() {
-		if err := os.Mkdir(path, 0755); err != nil {
-			panic(err)
-		}
+	if err := os.Mkdir(path, 0755); err != nil {
+		panic(err)
 	}
 }
 
