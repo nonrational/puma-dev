@@ -14,7 +14,7 @@ import (
 
 func TestStdoutCapture(t *testing.T) {
 	output := WithStdoutCaptured(func() {
-		fmt.Println("Hello World!")
+		fmt.Print("Hello World!")
 	})
 
 	assert.Equal(t, "Hello World!", output)
@@ -39,7 +39,9 @@ func TestCommand_link_noArgs(t *testing.T) {
 
 	WithWorkingDirectory(appDir, true, func() {
 		actual := WithStdoutCaptured(func() {
-			command()
+			if err := command(); err != nil {
+				assert.Fail(t, err.Error())
+			}
 		})
 
 		expected := fmt.Sprintf("+ App 'my-test-puma-dev-application' created, linked to '%s'\n", appDir)
@@ -56,7 +58,9 @@ func TestCommand_link_withNameOverride(t *testing.T) {
 
 	WithWorkingDirectory(tmpCwd, true, func() {
 		actual := WithStdoutCaptured(func() {
-			command()
+			if err := command(); err != nil {
+				assert.Fail(t, err.Error())
+			}
 		})
 
 		assert.Equal(t, "+ App 'anothername' created, linked to '/tmp/puma-dev-example-command-link-noargs'\n", actual)
