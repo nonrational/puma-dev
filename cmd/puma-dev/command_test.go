@@ -12,6 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStdoutCapture(t *testing.T) {
+	output := WithStdoutCaptured(func() {
+		fmt.Println("Hello World!")
+	})
+
+	assert.Equal(t, "Hello World!", output)
+}
+
 func TestCommand_noCommandArg(t *testing.T) {
 	StubFlagArgs(nil)
 	err := command()
