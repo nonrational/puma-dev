@@ -5,9 +5,7 @@ import (
 	"os"
 	"testing"
 
-	// !!!!! DO NOT MERGE UPSTREAM !!!!!!!!!!!!!!!!!!
-	. "github.com/nonrational/puma-dev/dev/devtest"
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	. "github.com/puma/puma-dev/dev/devtest"
 
 	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
@@ -16,14 +14,6 @@ import (
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
-}
-
-func TestStdoutCapture(t *testing.T) {
-	output := WithStdoutCaptured(func() {
-		fmt.Print("Hello World!")
-	})
-
-	assert.Equal(t, "Hello World!", output)
 }
 
 func TestCommand_noCommandArg(t *testing.T) {
