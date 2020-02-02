@@ -20,6 +20,19 @@ func StubFlagArgs(args []string) {
 	flag.Parse()
 }
 
+func EnsurePumaDevDirectory() {
+	fDir := "~/.puma-dev"
+	path, err := homedir.Expand(fDir)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := os.Mkdir(path, 0755); err != nil {
+		panic(err)
+	}
+}
+
 // WithStdoutCaptured executes the passed function and returns a string containing the stdout of the executed function.
 func WithStdoutCaptured(f func()) string {
 	osStdout := os.Stdout

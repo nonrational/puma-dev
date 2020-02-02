@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	// !!!!! DO NOT MERGE UPSTREAM !!!!!!!!!!!!!!!!!!
@@ -11,6 +12,11 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	EnsurePumaDevDirectory()
+	os.Exit(m.Run())
+}
 
 func TestStdoutCapture(t *testing.T) {
 	output := WithStdoutCaptured(func() {
