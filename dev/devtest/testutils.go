@@ -12,6 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	appSymlinkHome = "~/.puma-dev"
+)
+
 // StubFlagArgs overrides command arguments to pretend as if puma-dev was executed at the commandline.
 // ex: StubArgFlags([]string{"-n", "myapp", "path/to/app"}) ->
 //   $ puma-dev -n myapp path/to/app
@@ -20,16 +24,24 @@ func StubFlagArgs(args []string) {
 	flag.Parse()
 }
 
+// EnsurePumaDevDirectory creates ~/.puma-dev if it does not already exist.
 func EnsurePumaDevDirectory() {
-	fDir := "~/.puma-dev"
-	path, err := homedir.Expand(fDir)
+	path, err := homedir.Expand(appSymlinkHome)
 
 	if err != nil {
 		panic(err)
 	}
 
-	if err := os.Mkdir(path, 0755); err != nil {
+	fi, err := os.Stat(path)
+
+	if err != nil {
 		panic(err)
+	}
+
+	if !fi.IsDir() {
+		if err := os.Mkdir(path, 0755); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -96,8 +108,7 @@ func WithWorkingDirectory(path string, mkdir bool, f func()) {
 
 // RemoveAppSymlinkOrFail deletes a symlink at ~/.puma-dev/{name} or fails the test.
 func RemoveAppSymlinkOrFail(t *testing.T, name string) {
-	fDir := "~/.puma-dev"
-	path, err := homedir.Expand(filepath.Join(fDir, name))
+	path, err := homedir.Expand(filepath.Join(appSymlinkHome, name))
 	if err != nil {
 		panic(err)
 	}
