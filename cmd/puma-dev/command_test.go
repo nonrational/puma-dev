@@ -9,7 +9,7 @@ import (
 	. "github.com/nonrational/puma-dev/dev/devtest"
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-	"github.com/mitchellh/go-homedir"
+	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
 
