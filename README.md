@@ -1,102 +1,157 @@
-# Puma-dev: A fast, zero-config development server for OS X and Linux
+# Puma-dev: A fast, zero-config development server for macOS and Linux
 
 [![Build Status](https://travis-ci.org/puma/puma-dev.svg?branch=master)](https://travis-ci.org/puma/puma-dev)
 
-Puma-dev is the emotional successor to pow. It provides a quick and easy way to manage apps in development on OS X and Linux.
+Puma-dev is the emotional successor to pow. It provides a quick and easy way to manage apps in development on macOS and Linux.
 
 ## Highlights
 
 * Easy startup and idle shutdown of rack/rails apps
 * Easy access to the apps using the `.test` subdomain **(configurable)**
-* Run multiple custom domains at the same time, e.g. `.test` * `.puma`.
+* Run multiple custom domains at the same time, e.g. `.test`, `.puma`.
 
 ### Why choose puma-dev?
 * __https__ - it Just Works!
 * Supports __Rails 5 actioncable__ via rack.hijack websockets
-* Supports Mac __and__ Linux
+* Supports macOS __and__ Linux
 * The honorary `pow` [is no longer maintained](https://github.com/basecamp/pow/commit/310f260d08159cf86a52df7ddb5a3bd53a94614f)
 
-## Install on macOS
+## Installation
+First, ensure that the [`puma`](https://github.com/puma/puma) gem is installed. It probably belongs in the Gemfile of the application(s) you're trying to serve via puma-dev.
 
-First, install the [`puma`](https://github.com/puma/puma) gem.
+```ruby
+# Gemfile
+gem 'puma'
+```
 
-* Via Homebrew is the easiest: `brew install puma/puma/puma-dev`
-* Or download the latest release from https://github.com/puma/puma-dev/releases
-* If you haven't run puma-dev before, run: `sudo puma-dev -setup` to configure some DNS settings that have to be done as root
-* Run `puma-dev -install` to configure puma-dev to run in the background on ports 80 and 443 with the domain `.test`.
-  * If you're currently using pow, puma-dev taking control of `.test` will break it. If you want to just try out puma-dev and leave pow working, pass `-d pdev` on `-install` to use `.pdev` instead.
+### Homebrew on macOS
+`brew install puma/puma/puma-dev`
 
-*NOTE:* if you had pow installed before in the system, please make sure to run
-pow's uninstall script. Read more details in [the pow manual](http://pow.cx/manual.html#section_1.2).
+### Pre-built Binaries
 
-### Install on Linux
+You may download binaries for macOS and Linux at [https://github.com/puma/puma-dev/releases](https://github.com/puma/puma-dev/releases)
 
-* Puma-dev supports linux but requires additional installation to make all the features work.
-* You can either build from source or download a binary from https://github.com/puma/puma-dev/releases
+### Build from Source
 
-#### Domains (.test or similar)
+```shell
+#!/usr/bin/env bash
 
-Install the [dev-tld-resolver](https://github.com/puma/dev-tld-resolver) to make domains resolve.
+go version
 
-#### Port 80/443 binding
+go get github.com/puma/puma-dev/...
+cd $GOPATH/src/github.com/puma/puma-dev/
+make && make install
 
-There are 2 options to allow puma-dev to listen on port 80 and 443.
+$GOBIN/puma-dev -V
+```
 
-1. `sudo setcap CAP\_NET\_BIND\_SERVICE=+eip /path/to/puma-dev`
-2. Use `authbind`.
+------
 
-You don't need to bind to port 80/443 to use puma-dev but obviously it makes using the `.dev` domain much nicer.
+## macOS Support
 
-There is a shortcut for binding to 80/443 by passing `-sysbind` which overrides `-http-port` and `-https-port`.
+### Install & Setup
 
-### Important Note On Ports and Domain Names
+```shell
+# Configure some DNS settings that have to be done as root
+sudo puma-dev -setup
+# Configure puma-dev to run in the background on ports 80 and 443 with the domain `.test`.
+puma-dev -install
+```
 
-* Default ports are 80 and 443
-* Default domain is `.test`. Previously it was `.dev`, but it is owned by Google and since Dec 2017 **HSTS only** with real websites hosted there.
-  * Don't use .dev and .foo, as they are real domains
-* Using pow? To avoid conflicts, use different ports and domain or [uninstall pow properly](http://pow.cx/manual.html#section_1.2).
+If you wish to have `puma-dev` use a port other than 80, pass it via the `-install-port`, for example to use port 81: `puma-dev -install -install-port 81`.
+
+*NOTE:* If you installed puma-dev v0.2, please run `sudo puma-dev -cleanup` to remove firewall rules that puma-dev no longer uses (and will conflict with puma-dev working).
+
+If you're currently using `pow`, puma-dev taking control of `.test` will break it. If you want to just try out puma-dev and leave pow working, pass `-d pdev` on `-install` to use the `.pdev` as an alternate development TLD.
+
+*NOTE:* If you had pow installed before in the system, please make sure to run pow's uninstall script. Read more details in [the pow manual](http://pow.cx/manual.html#section_1.2).
+
+### Uninstall
+
+Run: `puma-dev -uninstall`
+
+*NOTE:* If you passed custom options (e.g. `-d test:localhost`) to `-setup`, be sure to pass them to `-uninstall` as well. Otherwise `/etc/resolver/*` might contain orphaned entries.
+
+### Logging
+
+When puma-dev is installed as a user agent (the default mode), it will log output from itself and the apps to `~/Library/Logs/puma-dev.log`. You can refer to there to find out if apps have started and look for errors.
+
+In the future, puma-dev will provide an integrated console for this log output.
+
+------
+
+## Linux Support
+
+Puma-dev supports Linux but requires the following additional installation steps to be followed to make all the features work (`-install` and `-setup` flags for Linux are not provided):
+
+### puma-dev root CA
+
+The puma-dev root CA is generated (in `~/.puma-dev-ssl/`), but you will need to install and trust this as a Certificate Authority by adding it to your operating system's certificate trust store, or by trusting it directly in your favored browser (as some browsers will not share the operating system's trust store).
+
+### Domains (.test or similar)
+
+In order for requests to the `.test` (or any other custom) domain to resolve, install the [dev-tld-resolver](https://github.com/puma/dev-tld-resolver), making sure to use `test` (or the custom TLD you want to use) when configuring TLDs.
+
+### Port 80/443 binding
+
+Linux prevents applications from binding to ports lower that 1024 by default. You don't need to bind to port 80/443 to use puma-dev but it makes using the `.test` domain much nicer (e.g. you'll be able to use the domain as-is in your browser rather than providing a port number)
+
+There are 2 options to allow puma-dev to listen on port 80 and 443:
+
+1. Give puma-dev the capabilities directly:
+  ```shell
+  sudo setcap CAP\_NET\_BIND\_SERVICE=+eip /path/to/puma-dev
+  ```
+or
+2. Install `authbind`. and invoke puma-dev with it when you want to use it e.g.
+  ```shell
+  authbind puma-dev -http-port 80 -https-port 443
+  ```
+
+There is a shortcut for binding to 80/443 by passing `-sysbind` to puma-dev when starting, which overrides `-http-port` and `-https-port`.
+
+### Systemd (running puma-dev in the background)
+
+On Linux, puma-dev will not automatically run in the background (as per the MacOS `-install` script); you'll need to [run it in the foreground](#running-in-the-foreground). You can set up a system daemon to start up puma-dev in the background yourself.
+
+1. Create `/lib/systemd/system/puma-dev.service` and put in the following:
+  ```
+  [Unit]
+  After=network.target
+
+  [Service]
+  User=$USER
+  ExecStart=/path/to/puma-dev -sysbind
+  Restart=on-failure
+
+  [Install]
+  WantedBy=multi-user.target
+  ```
+
+  Replace `path/to/puma-dev` with an absolute path to puma-dev
+  Replace the `$USER` variable with the name of the user you want to run under.
+
+2. Start puma-dev using systemd:
+  ```shell
+  sudo systemctl daemon-reload
+  sudo systemctl enable puma-dev
+  sudo systemctl start puma-dev
+  ```
+
+------
+
+## Usage
+
+Simply symlink your app's directory into `~/.puma-dev`! That's it!
+
+You can use the built-in helper subcommand: `puma-dev link [-n name] [dir]` to link app directories into your puma-dev directory (`~/.puma-dev` by default).
 
 ### Options
-
 Run: `puma-dev -h`
 
 You have the ability to configure most of the values that you'll use day-to-day.
 
-### Setup (OS X only)
-
-Run: `sudo puma-dev -setup`.
-
-This configures the bits that require root access, which allows your user access to the `/etc/resolver` directory.
-
-### Coming from v0.2
-
-Puma-dev v0.3 and later use launchd to access privileged ports, so if you installed v0.2, you'll need to remove the firewall rules.
-
-Run: `sudo puma-dev -cleanup`
-
-### Background Install/Upgrading for port 80 access (OS X only)
-
-If you want puma-dev to run in the background while you're logged in and on a common port, then you'll need to install it.
-
-*NOTE:* If you installed puma-dev v0.2, please run `sudo puma-dev -cleanup` to remove firewall rules that puma-dev no longer uses (and will conflict with puma-dev working)
-
-Run `puma-dev -install`.
-
-If you wish to have `puma-dev` use a port other than 80, pass it via the `-install-port`, for example to use port 81: `puma-dev -install -install-port 81`.
-
-### Running in the foreground
-
-Run: `puma-dev`
-
-Puma-dev will startup by default using the directory `~/.puma-dev`, looking for symlinks to apps just like pow. Drop a symlink to your app in there as: `cd ~/.puma-dev; ln -s /path/to/my/app test`. You can now access your app as `test.test`.
-
-Running `puma-dev` in this way will require you to use the listed http port, which is `9280` by default.
-
-### Coming from Pow
-
-By default, puma-dev uses the domain `.test` to manage your apps. If you want to have puma-dev look for apps in `~/.pow`, just run `puma-dev -pow`.
-
-## Configuration
+### Advanced Configuration
 
 Puma-dev supports loading environment variables before puma starts. It checks for the following files in this order:
 
@@ -111,23 +166,41 @@ Additionally, puma-dev uses a few environment variables to control how puma is s
 * `THREADS`: How many threads puma should use concurrently. Defaults to 5.
 * `WORKERS`: How many worker processes to start. Defaults to 0, meaning only use threads.
 
-## Restarting
+### Important Note On Ports and Domain Names
 
-If you would like to have puma-dev restart the current app, you can run `touch tmp/restart.txt` in that apps directory.
+* Default privileged ports are 80 and 443
+* Default domain is `.test`.
+  * Previously it was `.dev`, but it is owned by Google and since Dec 2017 **HSTS only** with real websites hosted there.
+  * Don't use `.dev` and `.foo`, as they are real TLDs.
+* Using pow? To avoid conflicts, use different ports and domain or [uninstall pow properly](http://pow.cx/manual.html#section_1.2).
 
-## Purging
+### Restarting
 
-If you would like to have puma-dev stop all the apps (for resource issues or because an app isn't restarting properly), you can send `puma-dev` the signal `USR1`. The easiest way to do that is:
+If you would like to have puma-dev restart *a specific app*, you can run `touch tmp/restart.txt` in that app's directory.
+
+### Purging
+
+If you would like to have puma-dev stop *all the apps* (for resource issues or because an app isn't restarting properly), you can send `puma-dev` the signal `USR1`. The easiest way to do that is:
 
 `puma-dev -stop`
 
-### Uninstall (OS X only)
+### Running in the foreground
 
-Run: `puma-dev -uninstall`
+Run: `puma-dev`
 
-## App usage
+Puma-dev will startup by default using the directory `~/.puma-dev`, looking for symlinks to apps just like pow. Drop a symlink to your app in there as: `cd ~/.puma-dev; ln -s /path/to/my/app test`. You can now access your app as `test.test`.
 
-Simply symlink your apps directory into `~/.puma-dev`! That's it!
+Running `puma-dev` in this way will require you to use the listed http port, which is `9280` by default.
+
+### Coming from v0.2
+
+Puma-dev v0.3 and later use launchd to access privileged ports, so if you installed v0.2, you'll need to remove the firewall rules.
+
+Run: `sudo puma-dev -cleanup`
+
+### Coming from Pow
+
+By default, puma-dev uses the domain `.test` to manage your apps. If you want to have puma-dev look for apps in `~/.pow`, just run `puma-dev -pow`.
 
 ### Sub Directories
 
@@ -148,12 +221,6 @@ Puma-dev automatically makes the apps available via SSL as well. When you first 
 That CA cert is used to dynamically create certificates for your apps when access to them is requested. It automatically happens, no configuration necessary. The certs are stored entirely in memory so future restarts of puma-dev simply generate new ones.
 
 When `-install` is used (and let's be honest, that's how you want to use puma-dev), then it listens on port 443 by default (configurable with `-install-https-port`) so you can just do `https://blah.test` to access your app via https.
-
-### OS X Logging
-
-When puma-dev is installed as a user agent (the default mode), it will log output from itself and the apps to `~/Library/Logs/puma-dev.log`. You can refer to there to find out if apps have started and look for errors.
-
-In the future, puma-dev will provide an integrated console for this log output.
 
 ### Websockets
 
@@ -190,12 +257,6 @@ The status includes:
   * The directory of the app
   * The last 1024 lines the app output
 
-## Subcommands
-
-### `puma-dev link [-n name] [dir]`
-
-Creates links to app directories into your puma-dev directory (`~/.puma-dev` by default).
-
 ## Development
 
 To build puma-dev, follow these steps:
@@ -206,3 +267,26 @@ To build puma-dev, follow these steps:
 * Run `$GOPATH/bin/puma-dev` to use your new binary
 
 Puma-dev uses [govendor](https://github.com/kardianos/govendor) to manage dependencies, so if you're working on puma-dev and need to introduce a new dependency, run `govendor fetch +vendor <package path>` to pull it into `vendor`. Then you can use it from within `puma-dev/src`
+
+### Releasing & Packaging for Homebrew
+
+This script compiles Darwin and Linux binaries, creates a release tag, and uploads the binaries to the release. The Darwin binary can then be referenced in [puma/homebrew-puma](https://github.com/puma/homebrew-puma/blob/bd977276dace11f9b31e6181aa770d676a996b11/puma-dev.rb#L4).
+
+```shell
+# Gox is a "A dead simple, no frills Go cross compile tool." It's used inside `make release`.
+go get -u github.com/mitchellh/gox
+# Ghr can be used to "Upload multiple artifacts to GitHub Release in parallel."
+go get -u github.com/tcnksm/ghr
+
+export OWNER="puma"
+export REPO="puma-dev"
+export RELEASE="0.13"
+export GITHUB_TOKEN="$GITHUB_API_TOKEN"
+
+make release
+
+git tag -f "v${RELEASE}"
+git push origin "v${RELEASE}"
+
+ghr -u $OWNER  -t $GITHUB_TOKEN -r $REPO  -n "v${RELEASE}" -delete -prerelease "v${RELEASE}" ./pkg/
+```
