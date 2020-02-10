@@ -1,4 +1,5 @@
 // https://github.com/mitchellh/go-homedir
+// Modifications: https://github.com/nonrational/puma-dev/commit/789320c2622bd3def12fb673706c091ff0d0b8cd#diff-905439e9019c2d4e5014596c9ab13bfb
 
 package homedir
 
