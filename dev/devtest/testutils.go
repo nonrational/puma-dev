@@ -15,8 +15,8 @@ import (
 )
 
 var (
-	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
 	appSymlinkHome      = "~/.puma-dev"
+	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
 	StubbedArgs         = make(map[string]int)
 )
 
