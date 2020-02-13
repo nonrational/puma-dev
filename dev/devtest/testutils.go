@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -38,8 +39,10 @@ func StubCommandLineArgs(args ...string) {
 		StubbedArgs[arg] += 1
 	}
 
+	flagSep := regexp.MustCompile(`[ =:]`)
+
 	for arg := range StubbedArgs {
-		stubbedFlagName := strings.Replace(arg, "-", "", -1)
+		stubbedFlagName := flagSep.Split(strings.Replace(arg, "-", "", 1), 1)[0]
 
 		if fl := flag.Lookup(stubbedFlagName); fl != nil {
 
