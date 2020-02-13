@@ -15,9 +15,16 @@ import (
 )
 
 var (
-	appSymlinkHome = "~/.puma-dev"
-	stubbedArgs    = make(map[string]int)
+	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
+	appSymlinkHome      = "~/.puma-dev"
+	StubbedArgs         = make(map[string]int)
 )
+
+func LogDebugf(msg string, vars ...interface{}) {
+	if DebugLoggingEnabled {
+		log.Printf(strings.Join([]string{"[DEBUG]", msg}, " "), vars...)
+	}
+}
 
 /*
 	StubCommandLineArgs overrides command arguments to allow flag-based branches
@@ -28,15 +35,18 @@ var (
 */
 func StubCommandLineArgs(args []string) {
 	for _, arg := range args {
-		stubbedArgs[arg] += 1
+		StubbedArgs[arg] += 1
 	}
 
-	for arg := range stubbedArgs {
+	for arg := range StubbedArgs {
 		stubbedFlagName := strings.Replace(arg, "-", "", -1)
 
 		if fl := flag.Lookup(stubbedFlagName); fl != nil {
+
+			oldValue := fl.Value.String()
+
 			if err := flag.Set(fl.Name, fl.DefValue); err == nil {
-				log.Printf("reset %+v", fl)
+				LogDebugf("reset flag %s to %s (was %s)", fl.Name, fl.Value.String(), oldValue)
 			}
 		}
 	}
