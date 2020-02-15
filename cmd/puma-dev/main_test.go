@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	. "github.com/puma/puma-dev/dev/devtest"
 	"github.com/stretchr/testify/assert"
@@ -18,18 +19,29 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestMainPumaDev(t *testing.T) {
+func backgroundPumaDev(t *testing.T) func() {
 	StubCommandLineArgs()
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
-	SetFlagOrFail(t, "http-port", "45670")
+	SetFlagOrFail(t, "http-port", "32100")
 
-	defer RemoveDirectoryOrFail(t, testAppLinkDirPath)
+	go func() {
+		main()
+	}()
 
-	go main()
+	// REPLACE WITH SOCKET WAIT
+	time.Sleep(5 * time.Second)
+
+	return func() {
+		RemoveDirectoryOrFail(t, testAppLinkDirPath)
+	}
+}
+
+func TestMainPumaDev(t *testing.T) {
+	defer backgroundPumaDev(t)()
 
 	curlStatus := func() string {
-		url := fmt.Sprintf("http://127.0.0.1:%v/status", *fHTTPPort)
+		url := fmt.Sprintf("http://127.0.0.1:%d/status", *fHTTPPort)
 
 		req, _ := http.NewRequest("GET", url, nil)
 		req.Host = "puma-dev"
