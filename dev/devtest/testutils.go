@@ -117,21 +117,21 @@ func RemoveDirectoryOrFail(t *testing.T, path string) {
 
 // MakeDirectoryOrFail makes a directory or fails the test, returning the path
 // of the directory that was created.
-func MakeDirectoryOrFail(t *testing.T, path string) string {
+func MakeDirectoryOrFail(t *testing.T, path string) func() {
 	if err := os.Mkdir(path, 0755); err != nil {
 		assert.Fail(t, err.Error())
 	}
-	return path
+
+	return func() {
+		RemoveDirectoryOrFail(t, path)
+	}
 }
 
 // WithWorkingDirectory executes the passed function within the context of
-// the passed working directory path. If the directory does not exist,
-// WithWorkingDirectory will attempt to create it.
+// the passed working directory path. If the directory does not exist, panic.
 func WithWorkingDirectory(path string, f func()) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := os.MkdirAll(path, 0755); err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	originalPath, err := os.Getwd()
