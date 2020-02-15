@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -12,6 +15,35 @@ import (
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
+}
+
+func CurlStatus() {
+	url := fmt.Sprintf("http://localhost:%v/status", *fHTTPPort)
+	log.Println(url)
+	cmd := exec.Command("curl", "-H 'Host: gotest-puma-dev'", url)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("curl: %q\n", out.String())
+}
+
+func TestMainPumaDev(t *testing.T) {
+	StubCommandLineArgs()
+	testAppLinkDirPath := "~/.gotest-puma-dev"
+	SetFlagOrFail(t, "dir", testAppLinkDirPath)
+	SetFlagOrFail(t, "debug", "true")
+
+	defer RemoveDirectoryOrFail(t, testAppLinkDirPath)
+
+	go main()
+
+	CurlStatus()
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {

@@ -26,7 +26,6 @@ func TestCommand_link_noArgs(t *testing.T) {
 	StubCommandLineArgs("link")
 
 	appDir, _ := homedir.Expand("~/my-test-puma-dev-application")
-
 	defer MakeDirectoryOrFail(t, appDir)()
 
 	WithWorkingDirectory(appDir, func() {
