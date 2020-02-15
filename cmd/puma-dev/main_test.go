@@ -22,6 +22,7 @@ func TestMainPumaDev(t *testing.T) {
 	StubCommandLineArgs()
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
+	SetFlagOrFail(t, "http-port", "45670")
 	SetFlagOrFail(t, "debug", "true")
 
 	defer RemoveDirectoryOrFail(t, testAppLinkDirPath)
