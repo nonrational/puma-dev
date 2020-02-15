@@ -1,49 +1,73 @@
 package dev
 
 import (
+	"flag"
+	"fmt"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	. "github.com/puma/puma-dev/dev/devtest"
 	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
 	supportPath      = homedir.MustExpand(supportDir)
 	expectedCertPath = filepath.Join(supportPath, "cert.pem")
+	expectedKeyPath  = filepath.Join(supportPath, "key.pem")
 )
 
-func makeTestCert(t *testing.T) func() {
-	os.RemoveAll(expectedCertPath)
-	err := SetupOurCert()
-	assert.Nil(t, err)
+func deleteAllPumaDevCAFromDefaultKeychain() {
+	exec.Command("sh", "-c", fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do security delete-certificate -t -Z $sha; done`)).Run()
+	exec.Command("sh", "-c", fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do security delete-certificate -Z $sha; done`)).Run()
 
-	return func() {
-		os.RemoveAll(expectedCertPath)
-	}
+	log.Println("! NOTICE - REMOVED ALL CERTS LIKE \"Puma-dev CA\" FROM THE DEFAULT macOS KEYCHAIN")
 }
 
 func TestSetupOurCert_ensureNotWorldReadable(t *testing.T) {
 	t.Skip("not implemented yet - https://github.com/puma/puma-dev/issues/215")
 }
 
-func TestTrustCert_newCert(t *testing.T) {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		t.Skip("No TTY available; can't exercise TLS cert setup")
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// Generate new CA cert and trust it
+func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
+	if flag.Lookup("test.run").Value.String() != t.Name() {
+		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
 	}
 
-	defer makeTestCert(t)()
+	os.Remove(expectedCertPath)
+	os.Remove(expectedKeyPath)
 
-	stdOut := WithStdoutCaptured(func() {
-		err := TrustCert(expectedCertPath)
+	assert.False(t, fileExists(expectedCertPath))
+	assert.False(t, fileExists(expectedKeyPath))
+
+	certInstallStdOut := WithStdoutCaptured(func() {
+		err := SetupOurCert()
 		assert.Nil(t, err)
+
+		assert.True(t, fileExists(expectedCertPath))
+		assert.True(t, fileExists(expectedKeyPath))
 	})
 
-	assert.Regexp(t, "^* Adding certification to login keychain as trusted", stdOut)
-	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n$", stdOut)
+	assert.Regexp(t, "^\\* Adding certification to login keychain as trusted\\n", certInstallStdOut)
+	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n", certInstallStdOut)
+	assert.Regexp(t, "\\* Certificates setup, ready for https operations!\\n$", certInstallStdOut)
+
+	defer func() {
+		deleteAllPumaDevCAFromDefaultKeychain()
+		os.Remove(expectedCertPath)
+		os.Remove(expectedKeyPath)
+	}()
 }
 
 func TestTrustCert_noCertProvided(t *testing.T) {

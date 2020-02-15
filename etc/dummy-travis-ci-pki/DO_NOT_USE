@@ -1,0 +1,2 @@
+These certificates are part of puma-dev's TravisCI scaffolding. They should
+never be trusted on a developer machine or put into a live context.

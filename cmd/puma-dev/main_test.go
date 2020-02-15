@@ -23,7 +23,6 @@ func backgroundPumaDev(t *testing.T) func() {
 	StubCommandLineArgs()
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
-	SetFlagOrFail(t, "http-port", "32100")
 	SetFlagOrFail(t, "d", "pumadevtld")
 
 	go func() {
@@ -31,7 +30,7 @@ func backgroundPumaDev(t *testing.T) func() {
 	}()
 
 	// REPLACE WITH SOCKET WAIT
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	return func() {
 		RemoveDirectoryOrFail(t, testAppLinkDirPath)
@@ -41,9 +40,7 @@ func backgroundPumaDev(t *testing.T) func() {
 func TestMainPumaDev(t *testing.T) {
 	defer backgroundPumaDev(t)()
 
-	curlStatus := func() string {
-		url := fmt.Sprintf("http://127.0.0.1:%d/status", *fHTTPPort)
-
+	curlStatus := func(url string) string {
 		req, _ := http.NewRequest("GET", url, nil)
 		req.Host = "puma-dev"
 
@@ -60,7 +57,8 @@ func TestMainPumaDev(t *testing.T) {
 		return strings.TrimSpace(string(bodyBytes))
 	}
 
-	assert.Equal(t, "{}", curlStatus())
+	assert.Equal(t, "{}", curlStatus(fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)))
+	// assert.Equal(t, "{}", curlStatus(fmt.Sprintf("https://localhost.pumadevtld:%d/status", *fTLSPort)))
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {
