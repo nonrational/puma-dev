@@ -1,9 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
+	"time"
 
 	. "github.com/puma/puma-dev/dev/devtest"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +17,50 @@ import (
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
+}
+
+func backgroundPumaDev(t *testing.T) func() {
+	StubCommandLineArgs()
+	testAppLinkDirPath := "~/.gotest-puma-dev"
+	SetFlagOrFail(t, "dir", testAppLinkDirPath)
+	SetFlagOrFail(t, "http-port", "32100")
+	SetFlagOrFail(t, "d", "pumadevtld")
+
+	go func() {
+		main()
+	}()
+
+	// REPLACE WITH SOCKET WAIT
+	time.Sleep(10 * time.Second)
+
+	return func() {
+		RemoveDirectoryOrFail(t, testAppLinkDirPath)
+	}
+}
+
+func TestMainPumaDev(t *testing.T) {
+	defer backgroundPumaDev(t)()
+
+	curlStatus := func() string {
+		url := fmt.Sprintf("http://127.0.0.1:%d/status", *fHTTPPort)
+
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Host = "puma-dev"
+
+		resp, err := http.DefaultClient.Do(req)
+
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+
+		defer resp.Body.Close()
+
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+		return strings.TrimSpace(string(bodyBytes))
+	}
+
+	assert.Equal(t, "{}", curlStatus())
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {

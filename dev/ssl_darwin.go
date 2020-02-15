@@ -3,6 +3,7 @@ package dev
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -37,12 +38,25 @@ func TrustCert(cert string) error {
 		return keychainError
 	}
 
-	err := exec.Command("sh", "-c",
+	addTrustedCertCommand := exec.Command("sh", "-c",
 		fmt.Sprintf(`security add-trusted-cert -d -r trustRoot -k '%s' '%s'`,
-			login, cert)).Run()
+			login, cert))
 
-	if err != nil {
+	addTrustedCertCommand.Env = os.Environ()
+
+	stderr, readPipeErr := addTrustedCertCommand.StderrPipe()
+	if readPipeErr != nil {
+		return readPipeErr
+	}
+
+	if err := addTrustedCertCommand.Start(); err != nil {
 		return err
+	}
+
+	stderrLines, _ := ioutil.ReadAll(stderr)
+
+	if err := addTrustedCertCommand.Wait(); err != nil {
+		return fmt.Errorf("`%s` had %s -- %s", addTrustedCertCommand.String(), err.Error(), stderrLines)
 	}
 
 	fmt.Printf("* Certificates setup, ready for https operations!\n")

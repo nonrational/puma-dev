@@ -21,6 +21,12 @@ var (
 	StubbedArgs         = make(map[string]int)
 )
 
+func SetFlagOrFail(t *testing.T, flagName string, flagValue string) {
+	if err := flag.Set(flagName, flagValue); err != nil {
+		assert.Fail(t, err.Error())
+	}
+}
+
 func LogDebugf(msg string, vars ...interface{}) {
 	if DebugLoggingEnabled {
 		log.Printf(strings.Join([]string{"[DEBUG]", msg}, " "), vars...)
@@ -118,7 +124,7 @@ func RemoveDirectoryOrFail(t *testing.T, path string) {
 // MakeDirectoryOrFail makes a directory or fails the test, returning the path
 // of the directory that was created.
 func MakeDirectoryOrFail(t *testing.T, path string) func() {
-	if err := os.Mkdir(path, 0755); err != nil {
+	if err := os.MkdirAll(path, 0755); err != nil {
 		assert.Fail(t, err.Error())
 	}
 

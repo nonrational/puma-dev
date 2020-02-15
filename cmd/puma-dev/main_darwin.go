@@ -12,6 +12,7 @@ import (
 
 	"github.com/puma/puma-dev/dev"
 	"github.com/puma/puma-dev/homedir"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -126,9 +127,13 @@ func main() {
 		log.Fatalf("Unable to configure OS X resolver: %s", err)
 	}
 
-	err = dev.SetupOurCert()
-	if err != nil {
-		log.Fatalf("Unable to setup TLS cert: %s", err)
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		err = dev.SetupOurCert()
+		if err != nil {
+			log.Fatalf("Unable to setup TLS cert: %s", err)
+		}
+	} else {
+		log.Println("! No TTY available. Skipping TLS cert setup.")
 	}
 
 	fmt.Printf("* Directory for apps: %s\n", dir)
