@@ -24,13 +24,23 @@ func backgroundPumaDev(t *testing.T) func() {
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
 	SetFlagOrFail(t, "http-port", "32100")
+	SetFlagOrFail(t, "d", "pumadevtld")
+
+	info, err := os.Stat("/etc/resolver")
+
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	assert.True(t, info.Mode().IsDir())
+	fmt.Printf("/etc/resolver permissions: %#o\n", info.Mode().Perm())
 
 	go func() {
 		main()
 	}()
 
 	// REPLACE WITH SOCKET WAIT
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	return func() {
 		RemoveDirectoryOrFail(t, testAppLinkDirPath)
