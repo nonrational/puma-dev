@@ -1,11 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"log"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	. "github.com/puma/puma-dev/dev/devtest"
@@ -15,24 +16,6 @@ import (
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
-}
-
-func CurlStatus() string {
-	url := fmt.Sprintf("http://localhost:%v/status", *fHTTPPort)
-	log.Println(url)
-	cmd := exec.Command("curl", "-H 'Host: gotest-puma-dev'", url)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-
-	err := cmd.Run()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("curl: %q\n", out.String())
-
-	return out.String()
 }
 
 func TestMainPumaDev(t *testing.T) {
@@ -45,7 +28,26 @@ func TestMainPumaDev(t *testing.T) {
 
 	go main()
 
-	assert.Equal(t, CurlStatus(), "unknown app")
+	curlStatus := func() string {
+		url := fmt.Sprintf("http://localhost:%v/status", *fHTTPPort)
+
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Host = "puma-dev"
+
+		resp, err := http.DefaultClient.Do(req)
+
+		if err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		defer resp.Body.Close()
+
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+		return strings.TrimSpace(string(bodyBytes))
+	}
+
+	assert.Equal(t, "{}", curlStatus())
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {
