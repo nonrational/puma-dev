@@ -4,10 +4,10 @@ go_import_path: github.com/puma/puma-dev
 
 go:
   - "1.13.x"
-  - master
+  # - master
 
 os:
-  - linux
+  # - linux
   - osx
 
 install:
@@ -15,9 +15,9 @@ install:
 
 before_script:
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-        sudo mkdir -p /etc/resolver
-        sudo chmod 0775 /etc/resolver
-        sudo chown :travis /etc/resolver
+        sudo mkdir -p /etc/resolver;
+        sudo chmod 0775 /etc/resolver;
+        sudo chown :travis /etc/resolver;
       fi
 
 script:
