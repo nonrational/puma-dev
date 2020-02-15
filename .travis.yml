@@ -15,10 +15,10 @@ install:
 
 before_script:
     - if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-      sudo mkdir -p /etc/resolver
-      sudo chmod 0775 /etc/resolver
-      sudo chown :travis /etc/resolver
-    fi
+        sudo mkdir -p /etc/resolver
+        sudo chmod 0775 /etc/resolver
+        sudo chown :travis /etc/resolver
+      fi
 
 script:
   - make test
