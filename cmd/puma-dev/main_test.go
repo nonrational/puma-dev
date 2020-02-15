@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func CurlStatus() {
+func CurlStatus() string {
 	url := fmt.Sprintf("http://localhost:%v/status", *fHTTPPort)
 	log.Println(url)
 	cmd := exec.Command("curl", "-H 'Host: gotest-puma-dev'", url)
@@ -31,6 +31,8 @@ func CurlStatus() {
 	}
 
 	fmt.Printf("curl: %q\n", out.String())
+
+	return out.String()
 }
 
 func TestMainPumaDev(t *testing.T) {
@@ -43,7 +45,7 @@ func TestMainPumaDev(t *testing.T) {
 
 	go main()
 
-	CurlStatus()
+	assert.Equal(t, CurlStatus(), "unknown app")
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {
