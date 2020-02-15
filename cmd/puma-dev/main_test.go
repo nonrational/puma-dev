@@ -1,17 +1,122 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	dev "github.com/puma/puma-dev/dev"
 	. "github.com/puma/puma-dev/dev/devtest"
+
+	"github.com/avast/retry-go"
+	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
+
+var testAppLinkDirPath = homedir.MustExpand("~/.gotest-puma-dev")
 
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
+}
+
+func generateLivePumaDevCertIfNotExist(t *testing.T) {
+	liveSupportPath := homedir.MustExpand(dev.SupportDir)
+	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
+	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
+
+	if !FileExists(liveCertPath) || !FileExists(liveKeyPath) {
+		MakeDirectoryOrFail(t, liveSupportPath)
+
+		if err := dev.GeneratePumaDevCertificateAuthority(liveCertPath, liveKeyPath); err != nil {
+			assert.FailNow(t, err.Error())
+		}
+	}
+}
+
+func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
+	StubCommandLineArgs()
+
+	SetFlagOrFail(t, "dir", testAppLinkDirPath)
+
+	generateLivePumaDevCertIfNotExist(t)
+
+	go func() {
+		main()
+	}()
+
+	err := retry.Do(
+		func() error {
+			_, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10*time.Second))
+			return err
+		},
+		retry.OnRetry(func(n uint, err error) {
+			log.Printf("#%d: %s\n", n, err)
+		}),
+	)
+
+	assert.NoError(t, err)
+
+	return func() {
+		RemoveDirectoryOrFail(t, testAppLinkDirPath)
+	}
+}
+
+func getUrlWithHost(t *testing.T, url string, host string) string {
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Host = host
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+	return strings.TrimSpace(string(bodyBytes))
+}
+
+func TestMainPumaDev(t *testing.T) {
+	defer launchPumaDevBackgroundServerWithDefaults(t)()
+
+	rackAppPath := filepath.Join(ProjectRoot, "etc", "rack-hi-puma")
+	hipumaLinkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), "hipuma")
+
+	if err := os.Symlink(rackAppPath, hipumaLinkPath); err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	t.Run("status", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)
+		statusHost := "puma-dev"
+
+		assert.Equal(t, "{}", getUrlWithHost(t, statusUrl, statusHost))
+	})
+
+	t.Run("hipuma", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		statusHost := "hipuma"
+
+		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, statusUrl, statusHost))
+	})
+
+	t.Run("unknown app", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		statusHost := "doesnotexist"
+
+		assert.Equal(t, "unknown app", getUrlWithHost(t, statusUrl, statusHost))
+	})
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {

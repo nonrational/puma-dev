@@ -3,11 +3,13 @@ package devtest
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,8 +21,19 @@ var (
 	appSymlinkHome      = "~/.puma-dev"
 	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
 	StubbedArgs         = make(map[string]int)
+
+	_, b, _, _  = runtime.Caller(0)
+	ProjectRoot = filepath.Join(filepath.Dir(b), "..", "..")
 )
 
+// SetFlagOrFail sets the value of a flag or fails the given testing.T
+func SetFlagOrFail(t *testing.T, flagName string, flagValue string) {
+	if err := flag.Set(flagName, flagValue); err != nil {
+		assert.Fail(t, err.Error())
+	}
+}
+
+// LogDebugf prints a formatted log message if DEBUG_LOG=1
 func LogDebugf(msg string, vars ...interface{}) {
 	if DebugLoggingEnabled {
 		log.Printf(strings.Join([]string{"[DEBUG]", msg}, " "), vars...)
@@ -110,28 +123,34 @@ func WithStdoutCaptured(f func()) string {
 
 // RemoveDirectoryOrFail removes a directory (and its contents) or fails the test.
 func RemoveDirectoryOrFail(t *testing.T, path string) {
+	if !DirExists(path) {
+		assert.FailNow(t, fmt.Sprintf("%s does not exist", path))
+	}
+
 	if err := os.RemoveAll(path); err != nil {
 		assert.Fail(t, err.Error())
+	} else {
+		LogDebugf("removed %s\n", path)
 	}
 }
 
 // MakeDirectoryOrFail makes a directory or fails the test, returning the path
 // of the directory that was created.
-func MakeDirectoryOrFail(t *testing.T, path string) string {
-	if err := os.Mkdir(path, 0755); err != nil {
+func MakeDirectoryOrFail(t *testing.T, path string) func() {
+	if err := os.MkdirAll(path, 0755); err != nil {
 		assert.Fail(t, err.Error())
 	}
-	return path
+
+	return func() {
+		RemoveDirectoryOrFail(t, path)
+	}
 }
 
 // WithWorkingDirectory executes the passed function within the context of
-// the passed working directory path. If the directory does not exist,
-// WithWorkingDirectory will attempt to create it.
+// the passed working directory path. If the directory does not exist, panic.
 func WithWorkingDirectory(path string, f func()) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := os.MkdirAll(path, 0755); err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	originalPath, err := os.Getwd()
@@ -165,4 +184,22 @@ func RemoveAppSymlinkOrFail(t *testing.T, name string) {
 	if err := os.Remove(path); err != nil {
 		panic(err)
 	}
+}
+
+// FileExists returns true if a regular file exists at the given path.
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// DirExists returns true if a directory exists at the given path.
+func DirExists(dirname string) bool {
+	info, err := os.Stat(dirname)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
 }
