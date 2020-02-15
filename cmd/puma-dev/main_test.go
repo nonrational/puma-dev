@@ -23,14 +23,13 @@ func TestMainPumaDev(t *testing.T) {
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
 	SetFlagOrFail(t, "http-port", "45670")
-	SetFlagOrFail(t, "debug", "true")
 
 	defer RemoveDirectoryOrFail(t, testAppLinkDirPath)
 
 	go main()
 
 	curlStatus := func() string {
-		url := fmt.Sprintf("http://localhost:%v/status", *fHTTPPort)
+		url := fmt.Sprintf("http://127.0.0.1:%v/status", *fHTTPPort)
 
 		req, _ := http.NewRequest("GET", url, nil)
 		req.Host = "puma-dev"
@@ -38,7 +37,7 @@ func TestMainPumaDev(t *testing.T) {
 		resp, err := http.DefaultClient.Do(req)
 
 		if err != nil {
-			assert.Fail(t, err.Error())
+			assert.FailNow(t, err.Error())
 		}
 
 		defer resp.Body.Close()
