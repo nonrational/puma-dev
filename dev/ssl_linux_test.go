@@ -9,10 +9,10 @@ import (
 
 func TestTrustCert_Linux_noCertProvided(t *testing.T) {
 	stdOut := WithStdoutCaptured(func() {
+		// TrustCert on Linux is a no-op, so it "succeeds" even if the path isn't found
 		err := TrustCert("/does/not/exist")
-		assert.NotNil(t, err)
-		assert.Regexp(t, "Error reading file /does/not/exist\\n$", err)
+		assert.Nil(t, err)
 	})
 
-	assert.Regexp(t, "^* Adding certification to login keychain as trusted", stdOut)
+	assert.Regexp(t, "^! Add /does/not/exist to your browser to trust CA\\n$", stdOut)
 }
