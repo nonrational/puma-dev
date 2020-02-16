@@ -3,11 +3,14 @@ package devtest
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,6 +22,9 @@ var (
 	appSymlinkHome      = "~/.puma-dev"
 	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
 	StubbedArgs         = make(map[string]int)
+
+	_, b, _, _ = runtime.Caller(0)
+	Basepath   = filepath.Join(filepath.Dir(b), "..", "..")
 )
 
 func SetFlagOrFail(t *testing.T, flagName string, flagValue string) {
@@ -118,6 +124,8 @@ func WithStdoutCaptured(f func()) string {
 func RemoveDirectoryOrFail(t *testing.T, path string) {
 	if err := os.RemoveAll(path); err != nil {
 		assert.Fail(t, err.Error())
+	} else {
+		fmt.Printf("removed %s\n", path)
 	}
 }
 
@@ -173,11 +181,18 @@ func RemoveAppSymlinkOrFail(t *testing.T, name string) {
 	}
 }
 
-// FileExists returns true if a regular file exists at the given path
+// FileExists returns true if a regular file exists at the given path.
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false
 	}
 	return !info.IsDir()
+}
+
+// ProjectRootDir returns the absolute path of project root.
+func ProjectRootDir() string {
+	_, b, _, _ := runtime.Caller(0)
+	d := path.Join(path.Dir(b))
+	return filepath.Dir(d)
 }

@@ -6,3 +6,6 @@ vendor/pkg/
 /puma-dev-*tar.gz
 
 /coverage*.out
+
+.ruby-version
+restart.txt

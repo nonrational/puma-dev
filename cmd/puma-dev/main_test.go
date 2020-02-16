@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testAppLinkDirPath = homedir.MustExpand("~/.gotest-puma-dev")
+
 func TestMain(m *testing.M) {
 	EnsurePumaDevDirectory()
 	os.Exit(m.Run())
@@ -38,9 +40,8 @@ func generateLivePumaDevCertIfNotExist(t *testing.T) {
 
 func backgroundPumaDev(t *testing.T) func() {
 	StubCommandLineArgs()
-	testAppLinkDirPath := "~/.gotest-puma-dev"
+
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
-	SetFlagOrFail(t, "d", "pumadevtld")
 
 	generateLivePumaDevCertIfNotExist(t)
 
@@ -56,28 +57,52 @@ func backgroundPumaDev(t *testing.T) func() {
 	}
 }
 
+func getUrlWithHost(t *testing.T, url string, host string) string {
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Host = host
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+
+	return strings.TrimSpace(string(bodyBytes))
+}
+
 func TestMainPumaDev(t *testing.T) {
 	defer backgroundPumaDev(t)()
 
-	curlStatus := func(url string) string {
-		req, _ := http.NewRequest("GET", url, nil)
-		req.Host = "puma-dev"
+	projectRoot := Basepath
+	fmt.Println(projectRoot)
+	rackAppPath := filepath.Join(projectRoot, "etc", "rack-hi-puma")
+	hipumaLinkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), "hipuma")
+	os.Symlink(rackAppPath, hipumaLinkPath)
 
-		resp, err := http.DefaultClient.Do(req)
+	t.Run("status", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)
+		statusHost := "puma-dev"
 
-		if err != nil {
-			assert.FailNow(t, err.Error())
-		}
+		assert.Equal(t, "{}", getUrlWithHost(t, statusUrl, statusHost))
+	})
 
-		defer resp.Body.Close()
+	t.Run("hipuma", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		statusHost := "hipuma"
 
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, statusUrl, statusHost))
+	})
 
-		return strings.TrimSpace(string(bodyBytes))
-	}
+	t.Run("unknown app", func(t *testing.T) {
+		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		statusHost := "doesnotexist"
 
-	assert.Equal(t, "{}", curlStatus(fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)))
-	// assert.Equal(t, "{}", curlStatus(fmt.Sprintf("https://localhost.pumadevtld:%d/status", *fTLSPort)))
+		assert.Equal(t, "unknown app", getUrlWithHost(t, statusUrl, statusHost))
+	})
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {
