@@ -27,4 +27,8 @@ coverage:
 	go test -coverprofile=coverage.out -v ./...
 	go tool cover -html=coverage.out
 
+test-osx-interactive:
+	go test -coverprofile=coverage_osx.out -v -test.run=TestSetupOurCert_InteractiveCertificateInstall ./dev
+	go tool cover -html=coverage_osx.out
+
 .PHONY: all release
