@@ -6,18 +6,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	. "github.com/puma/puma-dev/dev/devtest"
-	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	supportPath      = homedir.MustExpand(supportDir)
-	expectedCertPath = filepath.Join(supportPath, "cert.pem")
-	expectedKeyPath  = filepath.Join(supportPath, "key.pem")
 )
 
 func deleteAllPumaDevCAFromDefaultKeychain() {
@@ -31,15 +23,6 @@ func TestSetupOurCert_ensureNotWorldReadable(t *testing.T) {
 	t.Skip("not implemented yet - https://github.com/puma/puma-dev/issues/215")
 }
 
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
-// Generate new CA cert and trust it
 func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	if flag.Lookup("test.run").Value.String() != t.Name() {
 		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
@@ -48,15 +31,15 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	os.Remove(expectedCertPath)
 	os.Remove(expectedKeyPath)
 
-	assert.False(t, fileExists(expectedCertPath))
-	assert.False(t, fileExists(expectedKeyPath))
+	assert.False(t, FileExists(expectedCertPath))
+	assert.False(t, FileExists(expectedKeyPath))
 
 	certInstallStdOut := WithStdoutCaptured(func() {
 		err := SetupOurCert()
 		assert.Nil(t, err)
 
-		assert.True(t, fileExists(expectedCertPath))
-		assert.True(t, fileExists(expectedKeyPath))
+		assert.True(t, FileExists(expectedCertPath))
+		assert.True(t, FileExists(expectedKeyPath))
 	})
 
 	assert.Regexp(t, "^\\* Adding certification to login keychain as trusted\\n", certInstallStdOut)

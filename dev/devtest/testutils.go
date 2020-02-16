@@ -172,3 +172,12 @@ func RemoveAppSymlinkOrFail(t *testing.T, name string) {
 		panic(err)
 	}
 }
+
+// FileExists returns true if a regular file exists at the given path
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
