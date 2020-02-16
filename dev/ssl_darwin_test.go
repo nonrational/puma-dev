@@ -6,9 +6,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	. "github.com/puma/puma-dev/dev/devtest"
+	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,18 +30,22 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
 	}
 
-	os.Remove(expectedCertPath)
-	os.Remove(expectedKeyPath)
+	liveSupportPath := homedir.MustExpand(SupportDir)
+	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
+	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
 
-	assert.False(t, FileExists(expectedCertPath))
-	assert.False(t, FileExists(expectedKeyPath))
+	os.Remove(liveCertPath)
+	os.Remove(liveKeyPath)
+
+	assert.False(t, FileExists(liveCertPath))
+	assert.False(t, FileExists(liveKeyPath))
 
 	certInstallStdOut := WithStdoutCaptured(func() {
 		err := SetupOurCert()
 		assert.Nil(t, err)
 
-		assert.True(t, FileExists(expectedCertPath))
-		assert.True(t, FileExists(expectedKeyPath))
+		assert.True(t, FileExists(liveCertPath))
+		assert.True(t, FileExists(liveKeyPath))
 	})
 
 	assert.Regexp(t, "^\\* Adding certification to login keychain as trusted\\n", certInstallStdOut)
@@ -48,12 +54,12 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 
 	defer func() {
 		deleteAllPumaDevCAFromDefaultKeychain()
-		os.Remove(expectedCertPath)
-		os.Remove(expectedKeyPath)
+		os.Remove(liveCertPath)
+		os.Remove(liveKeyPath)
 	}()
 }
 
-func TestTrustCert_noCertProvided(t *testing.T) {
+func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 	stdOut := WithStdoutCaptured(func() {
 		err := TrustCert("/does/not/exist")
 		assert.NotNil(t, err)

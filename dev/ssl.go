@@ -87,7 +87,7 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 }
 
 func SetupOurCert() error {
-	dir := homedir.MustExpand(supportDir)
+	dir := homedir.MustExpand(SupportDir)
 
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {

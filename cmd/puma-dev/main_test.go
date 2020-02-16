@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	dev "github.com/puma/puma-dev/dev"
 	. "github.com/puma/puma-dev/dev/devtest"
+	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +22,25 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func generateLivePumaDevCertIfNotExist() error {
+	liveSupportPath := homedir.MustExpand(dev.SupportDir)
+	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
+	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
+
+	if !FileExists(liveCertPath) || !FileExists(liveKeyPath) {
+		if err := dev.GeneratePumaDevCertificateAuthority(liveCertPath, liveKeyPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func backgroundPumaDev(t *testing.T) func() {
+	if err := generateLivePumaDevCertIfNotExist(); err != nil {
+		assert.FailNow(t, err.Error())
+	}
+
 	StubCommandLineArgs()
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)

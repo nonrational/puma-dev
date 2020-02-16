@@ -10,7 +10,7 @@ import (
 	"github.com/puma/puma-dev/homedir"
 )
 
-const supportDir = "~/Library/Application Support/io.puma.dev"
+const SupportDir = "~/Library/Application Support/io.puma.dev"
 
 func LoginKeyChain() (string, error) {
 

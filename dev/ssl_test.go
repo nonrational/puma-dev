@@ -6,14 +6,7 @@ import (
 	"testing"
 
 	. "github.com/puma/puma-dev/dev/devtest"
-	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	supportPath      = homedir.MustExpand(supportDir)
-	expectedCertPath = filepath.Join(supportPath, "cert.pem")
-	expectedKeyPath  = filepath.Join(supportPath, "key.pem")
 )
 
 func TestGeneratePumaDevCertificateAuthority(t *testing.T) {
