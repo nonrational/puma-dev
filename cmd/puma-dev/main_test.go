@@ -22,29 +22,27 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func generateLivePumaDevCertIfNotExist() error {
+func generateLivePumaDevCertIfNotExist(t *testing.T) {
 	liveSupportPath := homedir.MustExpand(dev.SupportDir)
 	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
 	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
 
 	if !FileExists(liveCertPath) || !FileExists(liveKeyPath) {
+		MakeDirectoryOrFail(t, liveSupportPath)
+
 		if err := dev.GeneratePumaDevCertificateAuthority(liveCertPath, liveKeyPath); err != nil {
-			return err
+			assert.FailNow(t, err.Error())
 		}
 	}
-
-	return nil
 }
 
 func backgroundPumaDev(t *testing.T) func() {
-	if err := generateLivePumaDevCertIfNotExist(); err != nil {
-		assert.FailNow(t, err.Error())
-	}
-
 	StubCommandLineArgs()
 	testAppLinkDirPath := "~/.gotest-puma-dev"
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
 	SetFlagOrFail(t, "d", "pumadevtld")
+
+	generateLivePumaDevCertIfNotExist(t)
 
 	go func() {
 		main()
