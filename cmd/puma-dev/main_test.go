@@ -15,6 +15,7 @@ import (
 	dev "github.com/puma/puma-dev/dev"
 	. "github.com/puma/puma-dev/dev/devtest"
 
+	"github.com/avast/retry-go"
 	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,9 +52,17 @@ func backgroundPumaDev(t *testing.T) func() {
 		main()
 	}()
 
-	if _, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(30*time.Second)); err != nil {
-		assert.Fail(t, err.Error())
-	}
+	count := 1
+	err := retry.Do(func() error {
+		if _, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10*time.Second)); err != nil {
+			count = count + 1
+			return err
+		}
+		return nil
+	})
+	fmt.Printf("waited %d steps\n", count)
+
+	assert.NoError(t, err)
 
 	return func() {
 		RemoveDirectoryOrFail(t, testAppLinkDirPath)
