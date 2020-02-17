@@ -122,10 +122,14 @@ func WithStdoutCaptured(f func()) string {
 
 // RemoveDirectoryOrFail removes a directory (and its contents) or fails the test.
 func RemoveDirectoryOrFail(t *testing.T, path string) {
+	if !DirExists(path) {
+		assert.FailNow(t, fmt.Sprintf("%s does not exist", path))
+	}
+
 	if err := os.RemoveAll(path); err != nil {
 		assert.Fail(t, err.Error())
 	} else {
-		fmt.Printf("removed %s\n", path)
+		LogDebugf("removed %s\n", path)
 	}
 }
 
@@ -188,6 +192,15 @@ func FileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+// DirExists returns true if a directory exists at the given path.
+func DirExists(dirname string) bool {
+	info, err := os.Stat(dirname)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
 }
 
 // ProjectRootDir returns the absolute path of project root.

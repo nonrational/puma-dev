@@ -78,10 +78,12 @@ func TestMainPumaDev(t *testing.T) {
 	defer backgroundPumaDev(t)()
 
 	projectRoot := Basepath
-	fmt.Println(projectRoot)
 	rackAppPath := filepath.Join(projectRoot, "etc", "rack-hi-puma")
 	hipumaLinkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), "hipuma")
-	os.Symlink(rackAppPath, hipumaLinkPath)
+
+	if err := os.Symlink(rackAppPath, hipumaLinkPath); err != nil {
+		assert.FailNow(t, err.Error())
+	}
 
 	t.Run("status", func(t *testing.T) {
 		statusUrl := fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)
