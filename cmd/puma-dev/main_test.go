@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -13,6 +14,7 @@ import (
 
 	dev "github.com/puma/puma-dev/dev"
 	. "github.com/puma/puma-dev/dev/devtest"
+
 	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,8 +51,12 @@ func backgroundPumaDev(t *testing.T) func() {
 		main()
 	}()
 
-	// REPLACE WITH SOCKET WAIT
-	time.Sleep(1 * time.Second)
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10)*time.Second)
+	if err, ok := err.(*net.OpError); ok && err.Timeout() {
+		assert.Fail(t, err.Error())
+	} else {
+		defer conn.Close()
+	}
 
 	return func() {
 		RemoveDirectoryOrFail(t, testAppLinkDirPath)
