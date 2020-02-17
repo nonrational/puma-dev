@@ -51,11 +51,8 @@ func backgroundPumaDev(t *testing.T) func() {
 		main()
 	}()
 
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10)*time.Second)
-	if err, ok := err.(*net.OpError); ok && err.Timeout() {
+	if _, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(30*time.Second)); err != nil {
 		assert.Fail(t, err.Error())
-	} else {
-		defer conn.Close()
 	}
 
 	return func() {
