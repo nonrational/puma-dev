@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -41,7 +42,7 @@ func generateLivePumaDevCertIfNotExist(t *testing.T) {
 	}
 }
 
-func backgroundPumaDev(t *testing.T) func() {
+func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 	StubCommandLineArgs()
 
 	SetFlagOrFail(t, "dir", testAppLinkDirPath)
@@ -52,15 +53,15 @@ func backgroundPumaDev(t *testing.T) func() {
 		main()
 	}()
 
-	count := 1
-	err := retry.Do(func() error {
-		if _, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10*time.Second)); err != nil {
-			count = count + 1
+	err := retry.Do(
+		func() error {
+			_, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", *fHTTPPort), time.Duration(10*time.Second))
 			return err
-		}
-		return nil
-	})
-	fmt.Printf("waited %d steps\n", count)
+		},
+		retry.OnRetry(func(n uint, err error) {
+			log.Printf("#%d: %s\n", n, err)
+		}),
+	)
 
 	assert.NoError(t, err)
 
@@ -87,10 +88,9 @@ func getUrlWithHost(t *testing.T, url string, host string) string {
 }
 
 func TestMainPumaDev(t *testing.T) {
-	defer backgroundPumaDev(t)()
+	defer launchPumaDevBackgroundServerWithDefaults(t)()
 
-	projectRoot := Basepath
-	rackAppPath := filepath.Join(projectRoot, "etc", "rack-hi-puma")
+	rackAppPath := filepath.Join(ProjectRoot, "etc", "rack-hi-puma")
 	hipumaLinkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), "hipuma")
 
 	if err := os.Symlink(rackAppPath, hipumaLinkPath); err != nil {

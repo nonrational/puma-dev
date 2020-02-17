@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -23,16 +22,18 @@ var (
 	DebugLoggingEnabled = os.Getenv("DEBUG_LOG") == "1"
 	StubbedArgs         = make(map[string]int)
 
-	_, b, _, _ = runtime.Caller(0)
-	Basepath   = filepath.Join(filepath.Dir(b), "..", "..")
+	_, b, _, _  = runtime.Caller(0)
+	ProjectRoot = filepath.Join(filepath.Dir(b), "..", "..")
 )
 
+// SetFlagOrFail sets the value of a flag or fails the given testing.T
 func SetFlagOrFail(t *testing.T, flagName string, flagValue string) {
 	if err := flag.Set(flagName, flagValue); err != nil {
 		assert.Fail(t, err.Error())
 	}
 }
 
+// LogDebugf prints a formatted log message if DEBUG_LOG=1
 func LogDebugf(msg string, vars ...interface{}) {
 	if DebugLoggingEnabled {
 		log.Printf(strings.Join([]string{"[DEBUG]", msg}, " "), vars...)
@@ -201,11 +202,4 @@ func DirExists(dirname string) bool {
 		return false
 	}
 	return info.IsDir()
-}
-
-// ProjectRootDir returns the absolute path of project root.
-func ProjectRootDir() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return filepath.Dir(d)
 }

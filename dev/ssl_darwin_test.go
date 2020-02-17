@@ -15,8 +15,13 @@ import (
 )
 
 func deleteAllPumaDevCAFromDefaultKeychain() {
-	exec.Command("sh", "-c", fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do security delete-certificate -t -Z $sha; done`)).Run()
-	exec.Command("sh", "-c", fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do security delete-certificate -Z $sha; done`)).Run()
+	forEachPumaDevKeychainCertSha := func(subCommand string) string {
+		return fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do %s; done`, subCommand)
+	}
+
+	if err := exec.Command("sh", "-c", forEachPumaDevKeychainCertSha("security delete-certificate -Z $sha")).Run(); err != nil {
+		panic(err)
+	}
 
 	log.Println("! NOTICE - REMOVED ALL CERTS LIKE \"Puma-dev CA\" FROM THE DEFAULT macOS KEYCHAIN")
 }

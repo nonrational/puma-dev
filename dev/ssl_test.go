@@ -21,8 +21,7 @@ func TestGeneratePumaDevCertificateAuthority(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	tlsCert, err := tls.LoadX509KeyPair(testCertPath, testKeyPath)
+	_, err := tls.LoadX509KeyPair(testCertPath, testKeyPath)
 
-	assert.Nil(t, err)
-	assert.NotNil(t, tlsCert)
+	assert.NoError(t, err)
 }

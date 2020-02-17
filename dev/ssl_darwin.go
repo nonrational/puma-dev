@@ -39,8 +39,7 @@ func TrustCert(cert string) error {
 	}
 
 	addTrustedCertCommand := exec.Command("sh", "-c",
-		fmt.Sprintf(`security add-trusted-cert -d -r trustRoot -k '%s' '%s'`,
-			login, cert))
+		fmt.Sprintf(`security add-trusted-cert -d -r trustRoot -k '%s' '%s'`, login, cert))
 
 	stderr, readPipeErr := addTrustedCertCommand.StderrPipe()
 	if readPipeErr != nil {
