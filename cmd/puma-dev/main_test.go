@@ -147,10 +147,13 @@ func TestMainPumaDev(t *testing.T) {
 	t.Run("restart.txt", func(t *testing.T) {
 		appUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
 		appHost := "hipuma"
+		appRestartTxt := filepath.Join(ProjectRoot, "etc", "rack-hi-puma", "tmp", "restart.txt")
 
 		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, appUrl, appHost))
 
-		if err := exec.Command("sh", "-c", fmt.Sprintf("touch %s", filepath.Join(ProjectRoot, "etc", "rack-hi-puma", "tmp", "restart.txt"))).Run(); err != nil {
+		touchRestartTxt := exec.Command("sh", "-c", fmt.Sprintf("touch %s", appRestartTxt))
+
+		if err := touchRestartTxt.Run(); err != nil {
 			panic(err)
 		}
 
