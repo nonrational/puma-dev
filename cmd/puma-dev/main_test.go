@@ -102,7 +102,12 @@ func pollForEvent(t *testing.T, app string, event string, reason string) error {
 				}
 				evt := rawEvt.(map[string]interface{})
 				LogDebugf("%+v", evt)
-				if (app == "" || evt["app"] == app) && (event == "" || evt["event"] == event) && (reason == "" || evt["reason"] == reason) {
+
+				eventFound := (app == "" || evt["app"] == app) &&
+					(event == "" || evt["event"] == event) &&
+					(reason == "" || evt["reason"] == reason)
+
+				if eventFound {
 					return nil
 				}
 			}
