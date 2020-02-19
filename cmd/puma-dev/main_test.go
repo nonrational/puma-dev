@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -87,6 +89,32 @@ func getUrlWithHost(t *testing.T, url string, host string) string {
 	return strings.TrimSpace(string(bodyBytes))
 }
 
+func pollForEvent(t *testing.T, app string, event string, reason string) error {
+	return retry.Do(
+		func() error {
+			body := getUrlWithHost(t, fmt.Sprintf("http://localhost:%d/events", *fHTTPPort), "puma-dev")
+			eachEvent := strings.Split(body, "\n")
+
+			for _, line := range eachEvent {
+				var rawEvt interface{}
+				if err := json.Unmarshal([]byte(line), &rawEvt); err != nil {
+					assert.FailNow(t, err.Error())
+				}
+				evt := rawEvt.(map[string]interface{})
+				LogDebugf("%+v", evt)
+				if (app == "" || evt["app"] == app) && (event == "" || evt["event"] == event) && (reason == "" || evt["reason"] == reason) {
+					return nil
+				}
+			}
+
+			return errors.New("not found")
+		},
+		retry.RetryIf(func(err error) bool {
+			return err.Error() == "not found"
+		}),
+	)
+}
+
 func TestMainPumaDev(t *testing.T) {
 	defer launchPumaDevBackgroundServerWithDefaults(t)()
 
@@ -105,10 +133,24 @@ func TestMainPumaDev(t *testing.T) {
 	})
 
 	t.Run("hipuma", func(t *testing.T) {
-		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
-		statusHost := "hipuma"
+		appUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		appHost := "hipuma"
 
-		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, statusUrl, statusHost))
+		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, appUrl, appHost))
+	})
+
+	t.Run("restart.txt", func(t *testing.T) {
+		appUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		appHost := "hipuma"
+
+		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, appUrl, appHost))
+
+		if err := exec.Command("sh", "-c", fmt.Sprintf("touch %s", filepath.Join(ProjectRoot, "etc", "rack-hi-puma", "tmp", "restart.txt"))).Run(); err != nil {
+			panic(err)
+		}
+
+		assert.NoError(t, pollForEvent(t, "rack-hi-puma", "killing_app", "restart.txt touched"))
+		assert.NoError(t, pollForEvent(t, "rack-hi-puma", "shutdown", ""))
 	})
 
 	t.Run("unknown app", func(t *testing.T) {
