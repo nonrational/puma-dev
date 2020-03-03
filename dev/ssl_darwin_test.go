@@ -1,6 +1,8 @@
 package dev
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
 	"log"
@@ -12,6 +14,12 @@ import (
 	. "github.com/puma/puma-dev/dev/devtest"
 	"github.com/puma/puma-dev/homedir"
 	"github.com/stretchr/testify/assert"
+)
+
+var (
+	liveSupportPath = homedir.MustExpand(SupportDir)
+	liveCertPath    = filepath.Join(liveSupportPath, "cert.pem")
+	liveKeyPath     = filepath.Join(liveSupportPath, "key.pem")
 )
 
 func deleteAllPumaDevCAFromDefaultKeychain() {
@@ -73,4 +81,20 @@ func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 
 	assert.Regexp(t, "^* Adding certification to login keychain as trusted", stdOut)
 	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n$", stdOut)
+}
+
+func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {
+	parent, err := tls.LoadX509KeyPair(liveCertPath, liveKeyPath)
+	assert.NoError(t, err)
+
+	certContext, err := makeCert(&parent, "mail.google.com")
+	assert.NoError(t, err)
+
+	opts := x509.VerifyOptions{
+		DNSName: "mail.google.com",
+	}
+
+	if _, err := certContext.LeafX509Cert.Verify(opts); err != nil {
+		t.Fatal("failed to verify certificate: " + err.Error())
+	}
 }
