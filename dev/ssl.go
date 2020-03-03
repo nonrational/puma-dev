@@ -50,6 +50,7 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
+		PermittedURIDomains:   []string{".nope"},
 		IsCA:                  true,
 	}
 
@@ -148,22 +149,15 @@ func (c *certCache) GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certi
 		return nil, err
 	}
 
-	c.cache.Add(name, cert.ChildTLSCert)
+	c.cache.Add(name, cert)
 
-	return cert.ChildTLSCert, nil
-}
-
-type TLSCertificateContext struct {
-	ParentTLSCert  *tls.Certificate
-	ParentX509Cert *x509.Certificate
-	ChildTLSCert   *tls.Certificate
-	ChildX509Cert  *x509.Certificate
+	return cert, nil
 }
 
 func makeCert(
 	parent *tls.Certificate,
 	name string,
-) (*TLSCertificateContext, error) {
+) (*tls.Certificate, error) {
 
 	// start by generating private key
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -212,5 +206,5 @@ func makeCert(
 		Leaf:        cert,
 	}
 
-	return &TLSCertificateContext{parent, x509parent, tlsCert, cert}, nil
+	return tlsCert, nil
 }

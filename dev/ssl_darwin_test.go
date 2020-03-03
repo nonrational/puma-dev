@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -132,26 +134,47 @@ func TestLoginKeychain(t *testing.T) {
 }
 
 func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {
-	// roots := x509.NewCertPool()
-
 	parent, err := tls.LoadX509KeyPair(liveCertPath, liveKeyPath)
 	assert.NoError(t, err)
 
-	certCtx, err := makeCert(&parent, ".mail.google.com")
+	tlsCert, err := makeCert(&parent, "rack-hi-puma.localhost")
 	assert.NoError(t, err)
 
+	for idx, bytes := range tlsCert.Certificate {
+		fName := fmt.Sprintf("testcert_%v.pem", idx)
+		certOut, err := os.Create(fName)
+		if err != nil {
+			panic("err writing" + fName)
+		}
+		pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: bytes})
+		certOut.Close()
+	}
+
+	certBytes := tlsCert.Certificate[0]
+
+	rootPEM, err := ioutil.ReadFile(liveCertPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
+	if !ok {
+		panic("failed to parse root certificate")
+	}
+
+	x509Cert, err := x509.ParseCertificate(certBytes)
+	if err != nil {
+		panic("failed to parse certificate: " + err.Error())
+	}
+
 	opts := x509.VerifyOptions{
-		DNSName: "mail.google.com",
-		// Roots:   roots,
+		Roots:         roots,
+		DNSName:       "rack-hi-puma.localhost",
+		Intermediates: x509.NewCertPool(),
 	}
 
-	if _, err := certCtx.ChildX509Cert.Verify(opts); err != nil {
-		t.Log("child failed to verify certificate: " + err.Error())
-		t.Fail()
-	}
-
-	if _, err := certCtx.ParentX509Cert.Verify(opts); err != nil {
-		t.Log("parent failed to verify certificate: " + err.Error())
-		t.Fail()
+	if _, err := x509Cert.Verify(opts); err != nil {
+		assert.FailNow(t, "failed to verify certificate: "+err.Error())
 	}
 }
