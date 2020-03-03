@@ -137,6 +137,8 @@ func (c *certCache) GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certi
 
 	name := clientHello.ServerName
 
+	fmt.Println("name: " + name)
+
 	if val, ok := c.cache.Get(name); ok {
 		return val.(*tls.Certificate), nil
 	}
@@ -146,21 +148,22 @@ func (c *certCache) GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certi
 		return nil, err
 	}
 
-	c.cache.Add(name, cert)
+	c.cache.Add(name, cert.ChildTLSCert)
 
-	return cert.LeafTlsCert, nil
+	return cert.ChildTLSCert, nil
 }
 
-type TlsCertificateContext struct {
-	RootTlsCert  *tls.Certificate
-	LeafX509Cert *x509.Certificate
-	LeafTlsCert  *tls.Certificate
+type TLSCertificateContext struct {
+	ParentTLSCert  *tls.Certificate
+	ParentX509Cert *x509.Certificate
+	ChildTLSCert   *tls.Certificate
+	ChildX509Cert  *x509.Certificate
 }
 
 func makeCert(
 	parent *tls.Certificate,
 	name string,
-) (*TlsCertificateContext, error) {
+) (*TLSCertificateContext, error) {
 
 	// start by generating private key
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -209,5 +212,5 @@ func makeCert(
 		Leaf:        cert,
 	}
 
-	return &TlsCertificateContext{parent, x509parent, tlsCert}, nil
+	return &TLSCertificateContext{parent, x509parent, tlsCert, cert}, nil
 }

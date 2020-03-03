@@ -72,6 +72,30 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	}()
 }
 
+func TestSetupOurCert_CleanCertInstall(t *testing.T) {
+	if flag.Lookup("test.run").Value.String() != t.Name() {
+		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
+	}
+
+	deleteAllPumaDevCAFromDefaultKeychain()
+
+	liveSupportPath := homedir.MustExpand(SupportDir)
+	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
+	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
+
+	os.Remove(liveCertPath)
+	os.Remove(liveKeyPath)
+
+	assert.False(t, FileExists(liveCertPath))
+	assert.False(t, FileExists(liveKeyPath))
+
+	err := SetupOurCert()
+	assert.NoError(t, err)
+
+	assert.True(t, FileExists(liveCertPath))
+	assert.True(t, FileExists(liveKeyPath))
+}
+
 func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 	stdOut := WithStdoutCaptured(func() {
 		err := TrustCert("/does/not/exist")
@@ -84,17 +108,26 @@ func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 }
 
 func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {
+	// roots := x509.NewCertPool()
+
 	parent, err := tls.LoadX509KeyPair(liveCertPath, liveKeyPath)
 	assert.NoError(t, err)
 
-	certContext, err := makeCert(&parent, "mail.google.com")
+	certCtx, err := makeCert(&parent, ".mail.google.com")
 	assert.NoError(t, err)
 
 	opts := x509.VerifyOptions{
 		DNSName: "mail.google.com",
+		// Roots:   roots,
 	}
 
-	if _, err := certContext.LeafX509Cert.Verify(opts); err != nil {
-		t.Fatal("failed to verify certificate: " + err.Error())
+	if _, err := certCtx.ChildX509Cert.Verify(opts); err != nil {
+		t.Log("child failed to verify certificate: " + err.Error())
+		t.Fail()
+	}
+
+	if _, err := certCtx.ParentX509Cert.Verify(opts); err != nil {
+		t.Log("parent failed to verify certificate: " + err.Error())
+		t.Fail()
 	}
 }

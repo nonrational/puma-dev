@@ -13,16 +13,15 @@ import (
 const SupportDir = "~/Library/Application Support/io.puma.dev"
 
 func LoginKeyChain() (string, error) {
+	defaultKeychainPath := homedir.MustExpand("~/Library/Keychains/login.keychain-db")
+	legacyKeychainPath := homedir.MustExpand("~/Library/Keychains/login.keychain")
 
-	new_keychain_path := homedir.MustExpand("~/Library/Keychains/login.keychain-db")
-	old_keychain_path := homedir.MustExpand("~/Library/Keychains/login.keychain")
-
-	if _, err := os.Stat(new_keychain_path); err == nil {
-		return new_keychain_path, nil
+	if _, err := os.Stat(defaultKeychainPath); err == nil {
+		return defaultKeychainPath, nil
 	}
 
-	if _, err := os.Stat(old_keychain_path); err == nil {
-		return old_keychain_path, nil
+	if _, err := os.Stat(legacyKeychainPath); err == nil {
+		return legacyKeychainPath, nil
 	}
 
 	return "", errors.New("Could not find login keychain")
