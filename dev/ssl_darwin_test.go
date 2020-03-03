@@ -1,6 +1,7 @@
 package dev
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
@@ -22,13 +23,29 @@ var (
 	liveKeyPath     = filepath.Join(liveSupportPath, "key.pem")
 )
 
-func deleteAllPumaDevCAFromDefaultKeychain() {
+func deleteAllPumaDevCAFromDefaultKeychain(t *testing.T) {
 	forEachPumaDevKeychainCertSha := func(subCommand string) string {
 		return fmt.Sprintf(`for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do %s; done`, subCommand)
 	}
 
-	if err := exec.Command("sh", "-c", forEachPumaDevKeychainCertSha("security delete-certificate -Z $sha")).Run(); err != nil {
-		panic(err)
+	{
+		deleteAllPumaDevTrustsCmd := exec.Command("sh", "-c", forEachPumaDevKeychainCertSha("security delete-certificate -t -Z $sha"))
+		var stdout, stderr bytes.Buffer
+		deleteAllPumaDevTrustsCmd.Stdout = &stdout
+		deleteAllPumaDevTrustsCmd.Stderr = &stderr
+		if err := deleteAllPumaDevTrustsCmd.Run(); err != nil {
+			t.Fatalf("stderr: %s", stderr.Bytes())
+		}
+	}
+
+	{
+		deleteAllPumaDevCertsCmd := exec.Command("sh", "-c", forEachPumaDevKeychainCertSha("security delete-certificate -Z $sha"))
+		var stdout, stderr bytes.Buffer
+		deleteAllPumaDevCertsCmd.Stdout = &stdout
+		deleteAllPumaDevCertsCmd.Stderr = &stderr
+		if err := deleteAllPumaDevCertsCmd.Run(); err != nil {
+			t.Fatalf("stderr: %s", stderr.Bytes())
+		}
 	}
 
 	log.Println("! NOTICE - REMOVED ALL CERTS LIKE \"Puma-dev CA\" FROM THE DEFAULT macOS KEYCHAIN")
@@ -66,7 +83,7 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	assert.Regexp(t, "\\* Certificates setup, ready for https operations!\\n$", certInstallStdOut)
 
 	defer func() {
-		deleteAllPumaDevCAFromDefaultKeychain()
+		deleteAllPumaDevCAFromDefaultKeychain(t)
 		os.Remove(liveCertPath)
 		os.Remove(liveKeyPath)
 	}()
@@ -77,7 +94,7 @@ func TestSetupOurCert_CleanCertInstall(t *testing.T) {
 		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
 	}
 
-	deleteAllPumaDevCAFromDefaultKeychain()
+	deleteAllPumaDevCAFromDefaultKeychain(t)
 
 	liveSupportPath := homedir.MustExpand(SupportDir)
 	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
@@ -105,6 +122,13 @@ func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 
 	assert.Regexp(t, "^* Adding certification to login keychain as trusted", stdOut)
 	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n$", stdOut)
+}
+
+func TestLoginKeychain(t *testing.T) {
+	expected := homedir.MustExpand("~/Library/Keychains/login.keychain-db")
+	actual, err := LoginKeyChain()
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
 }
 
 func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {

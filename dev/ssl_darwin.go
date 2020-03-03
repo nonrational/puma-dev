@@ -1,30 +1,28 @@
 package dev
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-
-	"github.com/puma/puma-dev/homedir"
 )
 
 const SupportDir = "~/Library/Application Support/io.puma.dev"
 
 func LoginKeyChain() (string, error) {
-	defaultKeychainPath := homedir.MustExpand("~/Library/Keychains/login.keychain-db")
-	legacyKeychainPath := homedir.MustExpand("~/Library/Keychains/login.keychain")
+	// TODO: Clean up this command a bit
+	discoverLoginKeychainCmd := exec.Command("sh", "-c", `security login-keychain | xargs | tr -d '"' | tr -d '\n'`)
 
-	if _, err := os.Stat(defaultKeychainPath); err == nil {
-		return defaultKeychainPath, nil
+	var stdout, stderr bytes.Buffer
+	discoverLoginKeychainCmd.Stdout = &stdout
+	discoverLoginKeychainCmd.Stderr = &stderr
+
+	if err := discoverLoginKeychainCmd.Run(); err != nil {
+		return "", fmt.Errorf("could not find login keychain. security login-keychain had %s, %s", err.Error(), stderr.Bytes())
 	}
 
-	if _, err := os.Stat(legacyKeychainPath); err == nil {
-		return legacyKeychainPath, nil
-	}
+	// quotedKeychainPath := string(stdout.Bytes())
 
-	return "", errors.New("Could not find login keychain")
+	return string(stdout.Bytes()), nil
 }
 
 func TrustCert(cert string) error {
@@ -37,22 +35,14 @@ func TrustCert(cert string) error {
 		return keychainError
 	}
 
-	addTrustedCertCommand := exec.Command("sh", "-c",
-		fmt.Sprintf(`security add-trusted-cert -d -r trustRoot -k '%s' '%s'`, login, cert))
+	addTrustedCertCommand := exec.Command("sh", "-c", fmt.Sprintf(`security add-trusted-cert -k '%s' '%s'`, login, cert))
 
-	stderr, readPipeErr := addTrustedCertCommand.StderrPipe()
-	if readPipeErr != nil {
-		return readPipeErr
-	}
+	var stdout, stderr bytes.Buffer
+	addTrustedCertCommand.Stdout = &stdout
+	addTrustedCertCommand.Stderr = &stderr
 
-	if err := addTrustedCertCommand.Start(); err != nil {
-		return err
-	}
-
-	stderrLines, _ := ioutil.ReadAll(stderr)
-
-	if err := addTrustedCertCommand.Wait(); err != nil {
-		return fmt.Errorf("add-trusted-cert had %s. %s", err.Error(), stderrLines)
+	if err := addTrustedCertCommand.Run(); err != nil {
+		return fmt.Errorf("add-trusted-cert had %s. %s", err.Error(), stderr.Bytes())
 	}
 
 	fmt.Printf("* Certificates setup, ready for https operations!\n")
