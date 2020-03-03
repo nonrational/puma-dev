@@ -43,7 +43,7 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			Organization: []string{"Developer Certificate"},
-			CommonName:   "Puma-dev CA",
+			CommonName:   fmt.Sprintf("Puma-dev CA (%v)", serialNumber),
 		},
 		NotBefore:             notBefore,
 		NotAfter:              notAfter,
