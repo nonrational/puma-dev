@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -140,15 +139,15 @@ func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {
 	tlsCert, err := makeCert(&parent, "rack-hi-puma.localhost")
 	assert.NoError(t, err)
 
-	for idx, bytes := range tlsCert.Certificate {
-		fName := fmt.Sprintf("testcert_%v.pem", idx)
-		certOut, err := os.Create(fName)
-		if err != nil {
-			panic("err writing" + fName)
-		}
-		pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: bytes})
-		certOut.Close()
-	}
+	// for idx, bytes := range tlsCert.Certificate {
+	// 	fName := fmt.Sprintf("testcert_%v.pem", idx)
+	// 	certOut, err := os.Create(fName)
+	// 	if err != nil {
+	// 		panic("err writing" + fName)
+	// 	}
+	// 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: bytes})
+	// 	certOut.Close()
+	// }
 
 	certBytes := tlsCert.Certificate[0]
 
