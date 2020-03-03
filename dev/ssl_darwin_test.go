@@ -126,7 +126,7 @@ func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 
 func TestLoginKeychain(t *testing.T) {
 	expected := homedir.MustExpand("~/Library/Keychains/login.keychain-db")
-	actual, err := LoginKeyChain()
+	actual, err := loginKeyChain()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
