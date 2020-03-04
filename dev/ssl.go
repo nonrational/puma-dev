@@ -45,13 +45,14 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 			Organization: []string{"Developer Certificate"},
 			CommonName:   fmt.Sprintf("Puma-dev CA (%v)", serialNumber),
 		},
-		NotBefore:             notBefore,
-		NotAfter:              notAfter,
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		PermittedDNSDomains:   PumaDevAllowedTlds,
-		IsCA:                  true,
+		NotBefore:                   notBefore,
+		NotAfter:                    notAfter,
+		KeyUsage:                    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid:       true,
+		PermittedDNSDomains:         PumaDevAllowedTlds,
+		PermittedDNSDomainsCritical: true,
+		IsCA:                        true,
 	}
 
 	derBytes, err := x509.CreateCertificate(
