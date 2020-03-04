@@ -97,6 +97,7 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 		tlsCert, err := makeCert(&parent, dnsName)
 		assert.NoError(t, err)
 
+		// (tls.Certificate [][]byte) is a list of (x509.Certificate []byte)
 		derBytes := tlsCert.Certificate[0]
 
 		x509Cert, err := x509.ParseCertificate(derBytes)
