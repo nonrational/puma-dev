@@ -50,7 +50,7 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		ExcludedDNSDomains:    TldsAlphaByDomain,
+		PermittedDNSDomains:   PumaDevAllowedTlds,
 		IsCA:                  true,
 	}
 

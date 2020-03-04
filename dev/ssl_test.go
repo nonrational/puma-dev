@@ -39,18 +39,23 @@ func TestMakeCert(t *testing.T) {
 	parent, err := tls.LoadX509KeyPair(testCertPath, testKeyPath)
 	assert.NoError(t, err)
 
-	testCases := map[string]bool{
+	domainNameValidityTestCases := map[string]bool{
 		"mail.google.com": false,
+		"golang.org":      false,
 		"gmail.com":       false,
+		"cdc.gov":         false,
+		"unc.edu":         false,
 		"nip.io":          false,
-		"something.org":   false,
-		"a.very.long.subdomain.rack-hi-puma.pdev": true,
-		"something.localhost":                     true,
-		"something.local":                         true,
-		"rack-hi-puma.test":                       true,
+
+		"app.loc.al":            true,
+		"a.b.c.d.e.pdev":        true,
+		"something.local":       true,
+		"rack-hi-puma.test":     true,
+		"something.localhost":   true,
+		"rack-hi-puma.puma.dev": true,
 	}
 
-	for dnsName, expectedValid := range testCases {
+	for dnsName, expectedValid := range domainNameValidityTestCases {
 		t.Run(dnsName, func(t *testing.T) {
 			tlsCert, err := makeCert(&parent, dnsName)
 			assert.NoError(t, err)
@@ -79,7 +84,7 @@ func TestMakeCert(t *testing.T) {
 			}
 
 			if _, err := x509Cert.Verify(opts); (err == nil) != expectedValid {
-				assert.FailNowf(t, "certificate failed validity check", "%s was valid=%s, should be valid=%v", dnsName, (err == nil), expectedValid)
+				assert.FailNowf(t, "certificate failed validity check", "%s was valid=%v, should be valid=%v", dnsName, (err == nil), expectedValid)
 			}
 		})
 	}
