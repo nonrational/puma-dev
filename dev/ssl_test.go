@@ -48,7 +48,7 @@ func TestMakeCert(t *testing.T) {
 
 	x509Cert, err := x509.ParseCertificate(derBytes)
 	if err != nil {
-		assert.FailNowf(t, "failed to parse certificate: %", err.Error())
+		assert.FailNowf(t, "failed to parse certificate", "err: %s", err.Error())
 	}
 
 	rootPEM, err := ioutil.ReadFile(testCertPath)
@@ -67,6 +67,6 @@ func TestMakeCert(t *testing.T) {
 	}
 
 	if _, err := x509Cert.Verify(opts); err != nil {
-		assert.FailNowf(t, "failed to verify certificate: %s", err.Error())
+		assert.FailNowf(t, "failed to verify certificate", "err: %s", err.Error())
 	}
 }
