@@ -36,37 +36,51 @@ func TestMakeCert(t *testing.T) {
 		assert.FailNow(t, err.Error())
 	}
 
-	dnsName := "rack-hi-puma.localhost"
 	parent, err := tls.LoadX509KeyPair(testCertPath, testKeyPath)
 	assert.NoError(t, err)
 
-	tlsCert, err := makeCert(&parent, dnsName)
-	assert.NoError(t, err)
-
-	// (tls.Certificate [][]byte) is a list of (x509.Certificate []byte)
-	derBytes := tlsCert.Certificate[0]
-
-	x509Cert, err := x509.ParseCertificate(derBytes)
-	if err != nil {
-		assert.FailNowf(t, "failed to parse certificate", "err: %s", err.Error())
+	testCases := map[string]bool{
+		"mail.google.com": false,
+		"gmail.com":       false,
+		"nip.io":          false,
+		"something.org":   false,
+		"a.very.long.subdomain.rack-hi-puma.pdev": true,
+		"something.localhost":                     true,
+		"something.local":                         true,
+		"rack-hi-puma.test":                       true,
 	}
 
-	rootPEM, err := ioutil.ReadFile(testCertPath)
-	assert.NoError(t, err)
+	for dnsName, expectedValid := range testCases {
+		t.Run(dnsName, func(t *testing.T) {
+			tlsCert, err := makeCert(&parent, dnsName)
+			assert.NoError(t, err)
 
-	roots := x509.NewCertPool()
-	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
-	if !ok {
-		assert.FailNow(t, "failed to append CA root")
-	}
+			// (tls.Certificate [][]byte) is a list of (x509.Certificate []byte)
+			derBytes := tlsCert.Certificate[0]
 
-	opts := x509.VerifyOptions{
-		Roots:         roots,
-		DNSName:       dnsName,
-		Intermediates: x509.NewCertPool(),
-	}
+			x509Cert, err := x509.ParseCertificate(derBytes)
+			if err != nil {
+				assert.FailNowf(t, "failed to parse certificate", "err: %s", err.Error())
+			}
 
-	if _, err := x509Cert.Verify(opts); err != nil {
-		assert.FailNowf(t, "failed to verify certificate", "err: %s", err.Error())
+			rootPEM, err := ioutil.ReadFile(testCertPath)
+			assert.NoError(t, err)
+
+			roots := x509.NewCertPool()
+			ok := roots.AppendCertsFromPEM([]byte(rootPEM))
+			if !ok {
+				assert.FailNow(t, "failed to append CA root")
+			}
+
+			opts := x509.VerifyOptions{
+				Roots:         roots,
+				DNSName:       dnsName,
+				Intermediates: x509.NewCertPool(),
+			}
+
+			if _, err := x509Cert.Verify(opts); (err == nil) != expectedValid {
+				assert.FailNowf(t, "certificate failed validity check", "%s was valid=%s, should be valid=%v", dnsName, (err == nil), expectedValid)
+			}
+		})
 	}
 }
