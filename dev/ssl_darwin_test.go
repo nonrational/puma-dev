@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -88,6 +87,32 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 		os.Remove(liveCertPath)
 		os.Remove(liveKeyPath)
 	}()
+
+	t.Run("verify CA signed certificate", func(t *testing.T) {
+		dnsName := "rack-hi-puma.localhost"
+
+		parent, err := tls.LoadX509KeyPair(liveCertPath, liveKeyPath)
+		assert.NoError(t, err)
+
+		tlsCert, err := makeCert(&parent, dnsName)
+		assert.NoError(t, err)
+
+		derBytes := tlsCert.Certificate[0]
+
+		x509Cert, err := x509.ParseCertificate(derBytes)
+		if err != nil {
+			assert.FailNowf(t, "failed to parse certificate: %", err.Error())
+		}
+
+		opts := x509.VerifyOptions{
+			DNSName:       dnsName,
+			Intermediates: x509.NewCertPool(),
+		}
+
+		if _, err := x509Cert.Verify(opts); err != nil {
+			assert.FailNowf(t, "failed to verify certificate: %s", err.Error())
+		}
+	})
 }
 
 func TestSetupOurCert_CleanCertInstall(t *testing.T) {
@@ -130,50 +155,4 @@ func TestLoginKeychain(t *testing.T) {
 	actual, err := loginKeyChain()
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
-}
-
-func TestTrustCert_Darwin_VerifyTrustedDomains(t *testing.T) {
-	parent, err := tls.LoadX509KeyPair(liveCertPath, liveKeyPath)
-	assert.NoError(t, err)
-
-	tlsCert, err := makeCert(&parent, "rack-hi-puma.localhost")
-	assert.NoError(t, err)
-
-	// for idx, bytes := range tlsCert.Certificate {
-	// 	fName := fmt.Sprintf("testcert_%v.pem", idx)
-	// 	certOut, err := os.Create(fName)
-	// 	if err != nil {
-	// 		panic("err writing" + fName)
-	// 	}
-	// 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: bytes})
-	// 	certOut.Close()
-	// }
-
-	certBytes := tlsCert.Certificate[0]
-
-	rootPEM, err := ioutil.ReadFile(liveCertPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	roots := x509.NewCertPool()
-	ok := roots.AppendCertsFromPEM([]byte(rootPEM))
-	if !ok {
-		panic("failed to parse root certificate")
-	}
-
-	x509Cert, err := x509.ParseCertificate(certBytes)
-	if err != nil {
-		panic("failed to parse certificate: " + err.Error())
-	}
-
-	opts := x509.VerifyOptions{
-		Roots:         roots,
-		DNSName:       "rack-hi-puma.localhost",
-		Intermediates: x509.NewCertPool(),
-	}
-
-	if _, err := x509Cert.Verify(opts); err != nil {
-		assert.FailNow(t, "failed to verify certificate: "+err.Error())
-	}
 }
