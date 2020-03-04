@@ -137,8 +137,6 @@ func (c *certCache) GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certi
 
 	name := clientHello.ServerName
 
-	fmt.Println("name: " + name)
-
 	if val, ok := c.cache.Get(name); ok {
 		return val.(*tls.Certificate), nil
 	}
