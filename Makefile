@@ -29,7 +29,4 @@ coverage: test
 test-macos-interactive-certificate-install:
 	go test -coverprofile=coverage_osx.out -v -test.run=TestSetupOurCert_InteractiveCertificateInstall ./dev
 
-macos-certificate-reinstall:
-	go test -v -test.run=TestSetupOurCert_CleanCertInstall ./dev
-
 .PHONY: all release

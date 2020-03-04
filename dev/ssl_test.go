@@ -40,14 +40,6 @@ func TestMakeCert(t *testing.T) {
 	assert.NoError(t, err)
 
 	domainNameValidityTestCases := map[string]bool{
-		"mail.google.com":      false,
-		"golang.org":           false,
-		"gmail.com":            false,
-		"cdc.gov":              false,
-		"unc.edu":              false,
-		"nip.io":               false,
-		"rack-hi-pumma.qwerty": false,
-
 		"app.loc.al":            true,
 		"a.b.c.d.e.pdev":        true,
 		"something.local":       true,
