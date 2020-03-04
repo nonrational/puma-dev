@@ -116,30 +116,6 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	})
 }
 
-func TestSetupOurCert_CleanCertInstall(t *testing.T) {
-	if flag.Lookup("test.run").Value.String() != t.Name() {
-		t.Skipf("interactive test must be specified with -test.run=%s", t.Name())
-	}
-
-	deleteAllPumaDevCAFromDefaultKeychain(t)
-
-	liveSupportPath := homedir.MustExpand(SupportDir)
-	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")
-	liveKeyPath := filepath.Join(liveSupportPath, "key.pem")
-
-	os.Remove(liveCertPath)
-	os.Remove(liveKeyPath)
-
-	assert.False(t, FileExists(liveCertPath))
-	assert.False(t, FileExists(liveKeyPath))
-
-	err := SetupOurCert()
-	assert.NoError(t, err)
-
-	assert.True(t, FileExists(liveCertPath))
-	assert.True(t, FileExists(liveKeyPath))
-}
-
 func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
 	stdOut := WithStdoutCaptured(func() {
 		err := TrustCert("/does/not/exist")

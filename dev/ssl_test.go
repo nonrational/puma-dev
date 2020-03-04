@@ -40,12 +40,7 @@ func TestMakeCert(t *testing.T) {
 	assert.NoError(t, err)
 
 	domainNameValidityTestCases := map[string]bool{
-		"app.loc.al":            true,
-		"a.b.c.d.e.pdev":        true,
-		"something.local":       true,
-		"rack-hi-puma.test":     true,
-		"something.localhost":   true,
-		"rack-hi-puma.puma.dev": true,
+		"rack-hi-puma.test": true,
 	}
 
 	for dnsName, expectedValid := range domainNameValidityTestCases {
