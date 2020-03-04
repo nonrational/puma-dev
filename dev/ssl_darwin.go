@@ -20,9 +20,7 @@ func TrustCert(cert string) error {
 		return keychainError
 	}
 
-	addTrustedCertCommand := exec.Command("sh", "-c", fmt.Sprintf(`security add-trusted-cert -d -r trustRoot -k '%s' '%s'`, login, cert))
-
-	// addTrustedCertCommand := exec.Command("sh", "-c", fmt.Sprintf(`security add-trusted-cert -k '%s' '%s'`, login, cert))
+	addTrustedCertCommand := exec.Command("sh", "-c", fmt.Sprintf(`security add-trusted-cert -k '%s' '%s'`, login, cert))
 
 	var stderr bytes.Buffer
 	addTrustedCertCommand.Stderr = &stderr
