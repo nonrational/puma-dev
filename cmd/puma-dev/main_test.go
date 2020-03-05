@@ -74,7 +74,7 @@ func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 
 func getURLWithHost(t *testing.T, url string, host string) string {
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Host = host
+	req.Header.Add("Puma-Dev-Host", host)
 
 	resp, err := http.DefaultClient.Do(req)
 
@@ -169,8 +169,8 @@ func TestMainPumaDev(t *testing.T) {
 	})
 
 	t.Run("mismatch host and URL", func(t *testing.T) {
-		statusURL := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
-		statusHost := "proxied.example.host"
+		statusURL := fmt.Sprintf("http://whatever-i-want.test:%d/", *fHTTPPort)
+		statusHost := "hipuma.test"
 
 		assert.Equal(t, "Hi Puma!", getURLWithHost(t, statusURL, statusHost))
 	})
