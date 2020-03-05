@@ -10,6 +10,13 @@ os:
   - linux
   - osx
 
+addons:
+  hosts:
+    - hipuma.puma.dev
+    - hipuma.test
+    - hipuma.localhost
+    - hipuma.puma
+    
 install:
   - go get -t ./...
 

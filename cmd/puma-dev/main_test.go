@@ -75,6 +75,18 @@ func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 func getURLWithHost(t *testing.T, url string, host string) string {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Host = host
+	// req.Header.Add("Puma-Dev-Host", host)
+	// req.Host = req.URL.Host
+
+	// for hk, hv := range headers {
+	// 	req.Header.Add(hk, hv)
+
+	// 	// http.Client doesn't automatically respect Host header; have to manually set req.Host.
+	// 	// https://github.com/golang/go/issues/7682
+	// 	if hk == "Host" {
+	// 		req.Host = hv
+	// 	}
+	// }
 
 	resp, err := http.DefaultClient.Do(req)
 
