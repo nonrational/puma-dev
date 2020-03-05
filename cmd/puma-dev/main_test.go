@@ -167,6 +167,13 @@ func TestMainPumaDev(t *testing.T) {
 
 		assert.Equal(t, "unknown app", getURLWithHost(t, statusURL, statusHost))
 	})
+
+	t.Run("mismatch host and URL", func(t *testing.T) {
+		statusURL := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
+		statusHost := "proxied.example.host"
+
+		assert.Equal(t, "Hi Puma!", getURLWithHost(t, statusURL, statusHost))
+	})
 }
 
 func TestMain_execWithExitStatus_versionFlag(t *testing.T) {
