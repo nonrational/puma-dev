@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -132,8 +133,23 @@ func (h *HTTPServer) removeTLD(host string) string {
 	}
 }
 
+func (h *HTTPServer) appForRequest(req *http.Request) string {
+	headerHost := req.Header.Get("Host")
+	host := string(regexp.MustCompile(":[0-9]*$").ReplaceAll([]byte(req.Host), []byte("")))
+
+	ipAddr := net.ParseIP(host)
+
+	hostIsIPAddr := ipAddr != nil
+
+	if hostIsIPAddr {
+		return h.removeTLD(headerHost)
+	}
+
+	return h.removeTLD(host)
+}
+
 func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
-	name := h.removeTLD(req.Host)
+	name := h.appForRequest(req)
 
 	app, err := h.findApp(name)
 	if err != nil {
