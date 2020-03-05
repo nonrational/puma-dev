@@ -131,21 +131,21 @@ func TestMainPumaDev(t *testing.T) {
 	}
 
 	t.Run("status", func(t *testing.T) {
-		statusUrl := fmt.Sprintf("http://localhost:%d/status", *fHTTPPort)
+		statusUrl := fmt.Sprintf("http://hipuma.test:%d/status", *fHTTPPort)
 		statusHost := "puma-dev"
 
 		assert.Equal(t, "{}", getUrlWithHost(t, statusUrl, statusHost))
 	})
 
 	t.Run("hipuma", func(t *testing.T) {
-		appUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		appUrl := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
 		appHost := "hipuma"
 
 		assert.Equal(t, "Hi Puma!", getUrlWithHost(t, appUrl, appHost))
 	})
 
 	t.Run("restart.txt", func(t *testing.T) {
-		appUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		appUrl := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
 		appHost := "hipuma"
 		appRestartTxt := filepath.Join(ProjectRoot, "etc", "rack-hi-puma", "tmp", "restart.txt")
 
@@ -162,7 +162,7 @@ func TestMainPumaDev(t *testing.T) {
 	})
 
 	t.Run("unknown app", func(t *testing.T) {
-		statusUrl := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		statusUrl := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
 		statusHost := "doesnotexist"
 
 		assert.Equal(t, "unknown app", getUrlWithHost(t, statusUrl, statusHost))

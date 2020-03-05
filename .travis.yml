@@ -22,6 +22,7 @@ before_script:
   - rvm install 2.7.0
   - rvm --default use 2.7.0
   - gem install puma
+  - sudo echo -e "127.0.0.1    hipuma.test rack-hi-puma.localhost" >> /etc/hosts
 
 script:
   - make test
