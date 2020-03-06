@@ -72,9 +72,12 @@ func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 	}
 }
 
-func getURLWithHost(t *testing.T, url string, host string) string {
+func getURLWithHeaders(t *testing.T, url string, headers map[string]string) string {
 	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Add("Puma-Dev-Host", host)
+
+	for hk, hv := range headers {
+		req.Header.Add(hk, hv)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 
@@ -92,7 +95,7 @@ func getURLWithHost(t *testing.T, url string, host string) string {
 func pollForEvent(t *testing.T, app string, event string, reason string) error {
 	return retry.Do(
 		func() error {
-			body := getURLWithHost(t, fmt.Sprintf("http://localhost:%d/events", *fHTTPPort), "puma-dev")
+			body := getURLWithHeaders(t, fmt.Sprintf("http://localhost:%d/events", *fHTTPPort), map[string]string{"Host": "puma-dev"})
 			eachEvent := strings.Split(body, "\n")
 
 			for _, line := range eachEvent {
@@ -132,24 +135,24 @@ func TestMainPumaDev(t *testing.T) {
 
 	t.Run("status", func(t *testing.T) {
 		statusURL := fmt.Sprintf("http://hipuma.test:%d/status", *fHTTPPort)
-		statusHost := "puma-dev"
+		headers := map[string]string{"Host": "puma-dev"}
 
-		assert.Equal(t, "{}", getURLWithHost(t, statusURL, statusHost))
+		assert.Equal(t, "{}", getURLWithHeaders(t, statusURL, headers))
 	})
 
 	t.Run("hipuma", func(t *testing.T) {
 		appURL := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
-		appHost := "hipuma"
+		headers := map[string]string{"Host": "hipuma"}
 
-		assert.Equal(t, "Hi Puma!", getURLWithHost(t, appURL, appHost))
+		assert.Equal(t, "Hi Puma!", getURLWithHeaders(t, appURL, headers))
 	})
 
 	t.Run("restart.txt", func(t *testing.T) {
 		appURL := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
-		appHost := "hipuma"
+		headers := map[string]string{"Host": "hipuma"}
 		appRestartTxt := filepath.Join(ProjectRoot, "etc", "rack-hi-puma", "tmp", "restart.txt")
 
-		assert.Equal(t, "Hi Puma!", getURLWithHost(t, appURL, appHost))
+		assert.Equal(t, "Hi Puma!", getURLWithHeaders(t, appURL, headers))
 
 		touchRestartTxt := exec.Command("sh", "-c", fmt.Sprintf("touch %s", appRestartTxt))
 
@@ -163,16 +166,16 @@ func TestMainPumaDev(t *testing.T) {
 
 	t.Run("unknown app", func(t *testing.T) {
 		statusURL := fmt.Sprintf("http://hipuma.test:%d/", *fHTTPPort)
-		statusHost := "doesnotexist"
+		headers := map[string]string{"Host": "doesnotexist"}
 
-		assert.Equal(t, "unknown app", getURLWithHost(t, statusURL, statusHost))
+		assert.Equal(t, "unknown app", getURLWithHeaders(t, statusURL, headers))
 	})
 
 	t.Run("mismatch host and URL", func(t *testing.T) {
 		statusURL := fmt.Sprintf("http://whatever-i-want.test:%d/", *fHTTPPort)
-		statusHost := "hipuma.test"
+		headers := map[string]string{"Host": "hipuma.test"}
 
-		assert.Equal(t, "Hi Puma!", getURLWithHost(t, statusURL, statusHost))
+		assert.Equal(t, "Hi Puma!", getURLWithHeaders(t, statusURL, headers))
 	})
 }
 
