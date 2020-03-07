@@ -8,71 +8,77 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testHTTP HTTPServer
+var testPumaDevRequest PumaDevRequest
 
 type PumaDevRequestCtx struct {
-	URL        string
-	HostHeader string
+	URL            string
+	Host           string
+	PumaDevHost    string
+	PumaDevAppName string
 }
 
-func TestHTTP_appForRequest(t *testing.T) {
+func (ctx *PumaDevRequestCtx) PumaDevReq() PumaDevRequest {
 	var r io.Reader
 
+	req, _ := http.NewRequest("GET", ctx.URL, r)
+	req.Host = req.URL.Host
+
+	if ctx.PumaDevAppName != "" {
+		req.Header.Add("Puma-Dev-App-Name", ctx.PumaDevAppName)
+	}
+
+	if ctx.Host != "" {
+		req.Header.Add("Host", ctx.Host)
+		req.Host = ctx.Host
+	}
+
+	if ctx.PumaDevHost != "" {
+		req.Header.Add("Puma-Dev-Host", ctx.PumaDevHost)
+	}
+
+	return PumaDevRequest{req}
+}
+
+func TestPumaDevRequest_AppName(t *testing.T) {
+
 	testCases := map[PumaDevRequestCtx]string{
-		PumaDevRequestCtx{"http://asdf.puma", "qwerty.puma"}:      "asdf",
-		PumaDevRequestCtx{"http://127.0.0.1:8080", "qwerty.puma"}: "qwerty",
-		PumaDevRequestCtx{"https://127.0.0.1:", "qwerty.puma"}:    "qwerty",
-		PumaDevRequestCtx{"https://my.app.puma", "qwerty.puma"}:   "my.app",
+		PumaDevRequestCtx{URL: "http://qwerty.puma", PumaDevHost: "asdf.puma"}: "asdf",
+		PumaDevRequestCtx{URL: "http://qwerty.puma", PumaDevAppName: "asdf"}:   "asdf",
+		PumaDevRequestCtx{URL: "http://qwerty.puma", Host: "asdf.puma"}:        "asdf",
+		PumaDevRequestCtx{URL: "http://qwerty.puma"}:                           "qwerty",
+
+		PumaDevRequestCtx{URL: "https://127.0.0.1:443", PumaDevHost: "asdf.puma"}: "asdf",
+		PumaDevRequestCtx{URL: "https://127.0.0.1:443", PumaDevAppName: "asdf"}:   "asdf",
+		PumaDevRequestCtx{URL: "https://127.0.0.1:443", Host: "asdf.puma"}:        "asdf",
+		PumaDevRequestCtx{URL: "https://my.app.with.puma"}:                        "my.app.with",
+
+		PumaDevRequestCtx{URL: "http://127.0.0.1", Host: "proxy.io", PumaDevAppName: "asdf"}:   "asdf",
+		PumaDevRequestCtx{URL: "http://127.0.0.1", Host: "proxy.io", PumaDevHost: "asdf.puma"}: "asdf",
 	}
 
 	for ctx, expectedAppName := range testCases {
 		t.Run(ctx.URL, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", ctx.URL, r)
-			req.Header.Add("Host", ctx.HostHeader)
-
-			assert.Equal(t, expectedAppName, testHTTP.appForRequest(req))
+			pdReq := ctx.PumaDevReq()
+			assert.Equal(t, expectedAppName, pdReq.AppName())
 		})
 	}
 }
 
-func TestHTTP_removeTLD_test(t *testing.T) {
-	str := testHTTP.removeTLD("psychic-octo-guide.test")
+func TestPumaDevRequest_canonicalAppNameFromHost(t *testing.T) {
+	testCases := map[string]string{
+		"app":                        "app",
+		"app.test":                   "app",
+		"app.dev:8080":               "app",
+		"app.0.0.0.0.xip.io":         "app",
+		"app.255.255.255.255.nip.io": "app",
+		"app.loc.al":                 "app.loc",
+		"app.0.0.xip.io":             "",
+	}
 
-	assert.Equal(t, "psychic-octo-guide", str)
-}
-
-func TestHTTP_removeTLD_noTld(t *testing.T) {
-	str := testHTTP.removeTLD("shiny-train")
-
-	assert.Equal(t, "shiny-train", str)
-}
-
-func TestHTTP_removeTLD_mutlipartDomain(t *testing.T) {
-	str := testHTTP.removeTLD("expert-eureka.loc.al")
-
-	assert.Equal(t, "expert-eureka.loc", str)
-}
-
-func TestHTTP_removeTLD_dev(t *testing.T) {
-	str := testHTTP.removeTLD("bookish-giggle.dev:8080")
-
-	assert.Equal(t, "bookish-giggle", str)
-}
-
-func TestHTTP_removeTLD_xipIoMalformed(t *testing.T) {
-	str := testHTTP.removeTLD("legendary-meme.0.0.xip.io")
-
-	assert.Equal(t, "", str)
-}
-
-func TestHTTP_removeTLD_xipIoDots(t *testing.T) {
-	str := testHTTP.removeTLD("legendary-meme.0.0.0.0.xip.io")
-
-	assert.Equal(t, "legendary-meme", str)
-}
-
-func TestHTTP_removeTLD_nipIoDots(t *testing.T) {
-	str := testHTTP.removeTLD("effective-invention.255.255.255.255.nip.io")
-
-	assert.Equal(t, "effective-invention", str)
+	for host, expectedAppName := range testCases {
+		t.Run(host, func(t *testing.T) {
+			appName := testPumaDevRequest.canonicalAppNameFromHost(host)
+			assert.Equal(t, appName, expectedAppName)
+		})
+	}
 }
