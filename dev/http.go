@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -17,95 +16,23 @@ import (
 	"github.com/puma/puma-dev/httputil"
 )
 
-type HTTPServer struct {
-	Address    string
-	TLSAddress string
-	Pool       *AppPool
-	Debug      bool
-	Events     *Events
-
-	mux       *pat.PatternServeMux
-	transport *httpu.Transport
-	proxy     *httputil.ReverseProxy
+type PumaDevRequest struct {
+	httpRequest *http.Request
 }
 
-func (h *HTTPServer) Setup() {
-	h.transport = &httpu.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   5 * time.Second,
-			KeepAlive: 10 * time.Second,
-		}).Dial,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+func (r *PumaDevRequest) AppName() string {
+	if reqHeaderAppName := r.httpRequest.Header.Get("Puma-Dev-App-Name"); reqHeaderAppName != "" {
+		return reqHeaderAppName
 	}
 
-	h.Pool.AppClosed = h.AppClosed
-
-	h.proxy = &httputil.ReverseProxy{
-		Proxy:         h.proxyReq,
-		Transport:     h.transport,
-		FlushInterval: 1 * time.Second,
-		Debug:         h.Debug,
+	if reqHeaderHost := r.httpRequest.Header.Get("Puma-Dev-Host"); reqHeaderHost != "" {
+		return r.canonicalAppNameFromHost(reqHeaderHost)
 	}
 
-	h.mux = pat.New()
-
-	h.mux.Get("/status", http.HandlerFunc(h.status))
-	h.mux.Get("/events", http.HandlerFunc(h.events))
+	return r.canonicalAppNameFromHost(r.httpRequest.Host)
 }
 
-func (h *HTTPServer) AppClosed(app *App) {
-	// Whenever an app is closed, wipe out all idle conns. This
-	// obviously closes down more than just this one apps connections
-	// but that's ok.
-	h.transport.CloseIdleConnections()
-}
-
-func pruneSub(name string) string {
-	dot := strings.IndexByte(name, '.')
-	if dot == -1 {
-		return ""
-	}
-
-	return name[dot+1:]
-}
-
-func (h *HTTPServer) findApp(name string) (*App, error) {
-	var (
-		app *App
-		err error
-	)
-
-	for name != "" {
-		app, err = h.Pool.App(name)
-		if err != nil {
-			if err == ErrUnknownApp {
-				name = pruneSub(name)
-				continue
-			}
-
-			return nil, err
-		}
-
-		break
-	}
-
-	if app == nil {
-		app, err = h.Pool.App("default")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err = app.WaitTilReady()
-	if err != nil {
-		return nil, err
-	}
-
-	return app, nil
-}
-
-func (h *HTTPServer) removeTLD(host string) string {
+func (r *PumaDevRequest) canonicalAppNameFromHost(host string) string {
 	colon := strings.LastIndexByte(host, ':')
 	if colon != -1 {
 		if h, _, err := net.SplitHostPort(host); err == nil {
@@ -133,23 +60,100 @@ func (h *HTTPServer) removeTLD(host string) string {
 	}
 }
 
-func (h *HTTPServer) appForRequest(req *http.Request) string {
-	headerHost := req.Header.Get("Host")
-	host := string(regexp.MustCompile(":[0-9]*$").ReplaceAll([]byte(req.Host), []byte("")))
+type HTTPServer struct {
+	Address    string
+	TLSAddress string
+	Pool       *AppPool
+	Debug      bool
+	Events     *Events
 
-	ipAddr := net.ParseIP(host)
+	mux       *pat.PatternServeMux
+	transport *httpu.Transport
+	proxy     *httputil.ReverseProxy
+}
 
-	hostIsIPAddr := ipAddr != nil
-
-	if hostIsIPAddr {
-		return h.removeTLD(headerHost)
+func (h *HTTPServer) Setup() {
+	h.transport = &httpu.Transport{
+		Dial: (&net.Dialer{
+			Timeout:   5 * time.Second,
+			KeepAlive: 10 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	return h.removeTLD(host)
+	h.Debug = true
+
+	h.Pool.AppClosed = h.AppClosed
+
+	h.proxy = &httputil.ReverseProxy{
+		Proxy:         h.proxyReq,
+		Transport:     h.transport,
+		FlushInterval: 1 * time.Second,
+		Debug:         h.Debug,
+	}
+
+	h.mux = pat.New()
+
+	h.mux.Get("/status", http.HandlerFunc(h.status))
+	h.mux.Get("/events", http.HandlerFunc(h.events))
+}
+
+func (h *HTTPServer) AppClosed(app *App) {
+	// Whenever an app is closed, wipe out all idle conns. This
+	// obviously closes down more than just this one apps connections
+	// but that's ok.
+	h.transport.CloseIdleConnections()
+}
+
+func pruneSubdomain(name string) string {
+	dot := strings.IndexByte(name, '.')
+	if dot == -1 {
+		return ""
+	}
+
+	return name[dot+1:]
+}
+
+func (h *HTTPServer) findApp(name string) (*App, error) {
+	var (
+		app *App
+		err error
+	)
+
+	for name != "" {
+		app, err = h.Pool.App(name)
+		if err != nil {
+			if err == ErrUnknownApp {
+				name = pruneSubdomain(name)
+				continue
+			}
+
+			return nil, err
+		}
+
+		break
+	}
+
+	if app == nil {
+		app, err = h.Pool.App("default")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = app.WaitTilReady()
+	if err != nil {
+		return nil, err
+	}
+
+	return app, nil
 }
 
 func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
-	name := h.appForRequest(req)
+	pdReq := PumaDevRequest{req}
+
+	name := pdReq.AppName()
 
 	app, err := h.findApp(name)
 	if err != nil {
@@ -177,13 +181,15 @@ func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
 }
 
 func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	pdReq := PumaDevRequest{req}
+
 	if h.Debug {
 		fmt.Fprintf(os.Stderr, "%s: %s '%s' (host=%s)\n",
 			time.Now().Format(time.RFC3339Nano),
 			req.Method, req.URL.Path, req.Host)
 	}
 
-	if req.Host == "puma-dev" {
+	if pdReq.AppName() == "puma-dev" {
 		h.mux.ServeHTTP(w, req)
 	} else {
 		h.proxy.ServeHTTP(w, req)
