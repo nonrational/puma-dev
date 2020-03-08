@@ -8,57 +8,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bmizerany/pat"
 	"github.com/puma/puma-dev/httpu"
 	"github.com/puma/puma-dev/httputil"
 )
-
-type PumaDevRequest struct {
-	httpRequest *http.Request
-}
-
-func (r *PumaDevRequest) AppName() string {
-	if reqHeaderAppName := r.httpRequest.Header.Get("Puma-Dev-App-Name"); reqHeaderAppName != "" {
-		return reqHeaderAppName
-	}
-
-	if reqHeaderHost := r.httpRequest.Header.Get("Puma-Dev-Host"); reqHeaderHost != "" {
-		return r.canonicalAppNameFromHost(reqHeaderHost)
-	}
-
-	return r.canonicalAppNameFromHost(r.httpRequest.Host)
-}
-
-func (r *PumaDevRequest) canonicalAppNameFromHost(host string) string {
-	colon := strings.LastIndexByte(host, ':')
-	if colon != -1 {
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
-		}
-	}
-
-	if strings.HasSuffix(host, ".xip.io") || strings.HasSuffix(host, ".nip.io") {
-		parts := strings.Split(host, ".")
-		if len(parts) < 6 {
-			return ""
-		}
-
-		name := strings.Join(parts[:len(parts)-6], ".")
-
-		return name
-	}
-
-	dot := strings.LastIndexByte(host, '.')
-
-	if dot == -1 {
-		return host
-	} else {
-		return host[:dot]
-	}
-}
 
 type HTTPServer struct {
 	Address    string
@@ -106,33 +61,21 @@ func (h *HTTPServer) AppClosed(app *App) {
 	h.transport.CloseIdleConnections()
 }
 
-func pruneSubdomain(name string) string {
-	dot := strings.IndexByte(name, '.')
-	if dot == -1 {
-		return ""
-	}
-
-	return name[dot+1:]
-}
-
-func (h *HTTPServer) findApp(name string) (*App, error) {
+func (h *HTTPServer) findFirstApp(names []string) (*App, error) {
 	var (
 		app *App
 		err error
 	)
 
-	for name != "" {
+	for _, name := range names {
 		app, err = h.Pool.App(name)
 		if err != nil {
 			if err == ErrUnknownApp {
-				name = pruneSubdomain(name)
 				continue
 			}
 
 			return nil, err
 		}
-
-		break
 	}
 
 	if app == nil {
@@ -153,12 +96,11 @@ func (h *HTTPServer) findApp(name string) (*App, error) {
 func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
 	pdReq := PumaDevRequest{req}
 
-	name := pdReq.AppName()
+	app, err := h.findFirstApp(pdReq.AllAppNames())
 
-	app, err := h.findApp(name)
 	if err != nil {
 		if err == ErrUnknownApp {
-			h.Events.Add("unknown_app", "name", name, "host", req.Host)
+			h.Events.Add("unknown_app", "name", pdReq.AppName(), "host", req.Host)
 		} else {
 			h.Events.Add("lookup_error", "error", err.Error())
 		}
