@@ -77,6 +77,12 @@ func getURLWithHeaders(t *testing.T, url string, headers map[string]string) stri
 
 	for hk, hv := range headers {
 		req.Header.Add(hk, hv)
+
+		// http.Client doesn't automatically respect Host header; have to manually set req.Host.
+		// https://github.com/golang/go/issues/7682
+		if hk == "Host" {
+			req.Host = hv
+		}
 	}
 
 	resp, err := http.DefaultClient.Do(req)
