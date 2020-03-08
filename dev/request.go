@@ -33,10 +33,6 @@ func (r *PumaDevRequest) AllAppNames() []string {
 }
 
 func (r *PumaDevRequest) AppName() string {
-	if reqHeaderAppName := r.httpRequest.Header.Get("Puma-Dev-App-Name"); reqHeaderAppName != "" {
-		return reqHeaderAppName
-	}
-
 	if reqHeaderHost := r.httpRequest.Header.Get("Puma-Dev-Host"); reqHeaderHost != "" {
 		return r.canonicalAppNameFromHost(reqHeaderHost)
 	}

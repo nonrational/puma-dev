@@ -11,10 +11,9 @@ import (
 var testPumaDevRequest PumaDevRequest
 
 type PumaDevRequestCtx struct {
-	URL            string
-	Host           string
-	PumaDevHost    string
-	PumaDevAppName string
+	URL         string
+	Host        string
+	PumaDevHost string
 }
 
 func (ctx *PumaDevRequestCtx) PumaDevReq() PumaDevRequest {
@@ -22,10 +21,6 @@ func (ctx *PumaDevRequestCtx) PumaDevReq() PumaDevRequest {
 
 	req, _ := http.NewRequest("GET", ctx.URL, r)
 	req.Host = req.URL.Host
-
-	if ctx.PumaDevAppName != "" {
-		req.Header.Add("Puma-Dev-App-Name", ctx.PumaDevAppName)
-	}
 
 	if ctx.Host != "" {
 		req.Header.Add("Host", ctx.Host)
@@ -43,17 +38,17 @@ func TestPumaDevRequest_AppName(t *testing.T) {
 
 	testCases := map[PumaDevRequestCtx]string{
 		PumaDevRequestCtx{URL: "http://qwerty.puma", PumaDevHost: "asdf.puma"}: "asdf",
-		PumaDevRequestCtx{URL: "http://qwerty.puma", PumaDevAppName: "asdf"}:   "asdf",
+		PumaDevRequestCtx{URL: "http://qwerty.puma", PumaDevHost: "asdf"}:      "asdf",
 		PumaDevRequestCtx{URL: "http://qwerty.puma", Host: "asdf.puma"}:        "asdf",
 		PumaDevRequestCtx{URL: "http://qwerty.puma"}:                           "qwerty",
 
 		PumaDevRequestCtx{URL: "https://127.0.0.1:443", PumaDevHost: "asdf.puma"}: "asdf",
-		PumaDevRequestCtx{URL: "https://127.0.0.1:443", PumaDevAppName: "asdf"}:   "asdf",
+		PumaDevRequestCtx{URL: "https://127.0.0.1:443", PumaDevHost: "asdf"}:      "asdf",
 		PumaDevRequestCtx{URL: "https://127.0.0.1:443", Host: "asdf.puma"}:        "asdf",
 		PumaDevRequestCtx{URL: "https://my.app.with.puma"}:                        "my.app.with",
 
-		PumaDevRequestCtx{URL: "http://127.0.0.1", Host: "proxy.io", PumaDevAppName: "asdf"}:   "asdf",
 		PumaDevRequestCtx{URL: "http://127.0.0.1", Host: "proxy.io", PumaDevHost: "asdf.puma"}: "asdf",
+		PumaDevRequestCtx{URL: "http://127.0.0.1", Host: "proxy.io", PumaDevHost: "asdf"}:      "asdf",
 	}
 
 	for ctx, expectedAppName := range testCases {

@@ -74,6 +74,7 @@ func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 
 func getURLWithHeaders(t *testing.T, url string, headers map[string]string) string {
 	req, _ := http.NewRequest("GET", url, nil)
+	req.Host = req.URL.Host
 
 	for hk, hv := range headers {
 		req.Header.Add(hk, hv)
@@ -178,7 +179,7 @@ func TestMainPumaDev(t *testing.T) {
 	})
 
 	t.Run("mismatch host and URL", func(t *testing.T) {
-		statusURL := fmt.Sprintf("http://whatever-i-want.test:%d/", *fHTTPPort)
+		statusURL := fmt.Sprintf("http://127.0.0.1:%d/", *fHTTPPort)
 		headers := map[string]string{"Host": "hipuma.test"}
 
 		assert.Equal(t, "Hi Puma!", getURLWithHeaders(t, statusURL, headers))
