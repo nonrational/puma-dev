@@ -11,7 +11,7 @@ commands:
       - checkout
       - run: go version
       - run: go mod download
-      - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=60s ./...
+      - run: go test -v -coverprofile=coverage.out -covermode=atomic -timeout=300s ./...
 
   macos_check_version:
     steps:
