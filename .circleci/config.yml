@@ -47,10 +47,10 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
+      - macos_prepare_filesystem
       - macos_install_go_1_12
       - macos_set_ruby_2_6
       - gem_install_puma
-      - macos_prepare_filesystem
       - go_test
 
   test_mojave:
@@ -62,15 +62,31 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
+      - macos_prepare_filesystem
       - macos_install_go_1_12
       - macos_set_ruby_2_6
       - gem_install_puma
+      - go_test
+
+  test_high_sierra:
+    macos:
+      xcode: 10.1.0
+    working_directory: /Users/distiller/go/src/puma/puma-dev
+    environment:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      GO111MODULE: "on"
+      GOPATH: "/Users/distiller/go"
+    steps:
       - macos_prepare_filesystem
+      - macos_install_go_1_12
+      - macos_set_ruby_2_6
+      - gem_install_puma
       - go_test
 
   test_linux:
     docker:
       - image: circleci/golang:1.12
+      - image: circleci/ruby:2.6-stretch
     working_directory: /go/src/puma/puma-dev
     environment:
       GO111MODULE: "on"
