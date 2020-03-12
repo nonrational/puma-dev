@@ -13,6 +13,10 @@ commands:
       - run: go mod download
       - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=60s ./...
 
+  macos_check_version:
+    steps:
+      - run: sw_vers
+
   macos_install_go_1_12:
     steps:
       - run:
@@ -46,6 +50,7 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
+      - macos_check_version
       - macos_prepare_filesystem
       - macos_install_go_1_12
       - macos_set_ruby_2_6
@@ -61,6 +66,7 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
+      - macos_check_version
       - macos_prepare_filesystem
       - macos_install_go_1_12
       - macos_set_ruby_2_6
@@ -76,6 +82,7 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
+      - macos_check_version
       - macos_prepare_filesystem
       - macos_install_go_1_12
       - macos_set_ruby_2_6
