@@ -50,6 +50,12 @@ commands:
           name: configure ruby-2.6
           command: echo 'chruby ruby-2.6' >> $BASH_ENV
 
+  macos_set_ruby_2_5:
+    steps:
+      - run:
+          name: configure ruby-2.5
+          command: echo 'chruby ruby-2.5' >> $BASH_ENV
+
 jobs:
   test_catalina:
     macos:
@@ -96,7 +102,7 @@ jobs:
       - macos_prepare_filesystem
       # homebrew-core: 8ee7f0a64ff3915466d6b12402a61b5cb495be54
       - macos_install_go_1_11
-      - macos_set_ruby_2_6
+      - macos_set_ruby_2_5
       - gem_install_puma
       - go_test
 
