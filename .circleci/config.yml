@@ -1,16 +1,25 @@
 version: 2.1
 
 commands:
-  macos_install_puma:
+  gem_install_puma:
+    steps:
+      - run: ruby --version
+      - run: gem install puma
+
+  go_test:
+    steps:
+      - checkout
+      - run: go version
+      - run: go mod download
+      - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=60s ./...
+
+  macos_install_go_1_12:
     steps:
       - run:
-          name: ruby-2.6
+          name: install go-1.12
           command: |
-            echo 'chruby ruby-2.6' >> $BASH_ENV
-      - run:
-          name: Install Puma
-          command: |
-            gem install puma
+            brew install go@1.12
+            echo 'export PATH="/usr/local/opt/go@1.12/bin:$PATH"' >> $BASH_ENV
 
   macos_prepare_filesystem:
     steps:
@@ -21,23 +30,15 @@ commands:
             sudo chmod 0775 /etc/resolver;
             sudo chown :staff /etc/resolver;
 
-  macos_install_go:
+  macos_set_ruby_2_6:
     steps:
       - run:
-          name: install go-1.12
-          command: |
-            brew install go@1.12
-            echo 'export PATH="/usr/local/opt/go@1.12/bin:$PATH"' >> $BASH_ENV
+          name: configure ruby-2.6
+          command: echo 'chruby ruby-2.6' >> $BASH_ENV
 
-  go_test:
-    steps:
-      - checkout
-      - run: go version
-      - run: go mod download
-      - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=60s ./...
 
 jobs:
-  test_macos_catalina:
+  test_catalina:
     macos:
       xcode: 11.4.0
     working_directory: /Users/distiller/go/src/puma/puma-dev
@@ -46,12 +47,13 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
-      - macos_install_go
-      - macos_install_puma
+      - macos_install_go_1_12
+      - macos_set_ruby_2_6
+      - gem_install_puma
       - macos_prepare_filesystem
       - go_test
 
-  test_macos_mojave:
+  test_mojave:
     macos:
       xcode: 11.1.0
     working_directory: /Users/distiller/go/src/puma/puma-dev
@@ -60,15 +62,27 @@ jobs:
       GO111MODULE: "on"
       GOPATH: "/Users/distiller/go"
     steps:
-      - macos_install_go
-      - macos_install_puma
+      - macos_install_go_1_12
+      - macos_set_ruby_2_6
+      - gem_install_puma
       - macos_prepare_filesystem
+      - go_test
+
+  test_linux:
+    docker:
+      - image: circleci/golang:1.12
+    working_directory: /go/src/puma/puma-dev
+    environment:
+      GO111MODULE: "on"
+    steps:
+      - gem_install_puma
       - go_test
 
 workflows:
   version: 2
   test:
     jobs:
-      - test_macos_catalina
-      - test_macos_mojave
+      - test_catalina
+      - test_mojave
+      - test_linux
 
