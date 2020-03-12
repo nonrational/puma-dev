@@ -26,6 +26,15 @@ commands:
             brew install go@1.12
             echo 'export PATH="/usr/local/opt/go@1.12/bin:$PATH"' >> $BASH_ENV
 
+  macos_install_go_1_11:
+    steps:
+      - run:
+          name: install go-1.11
+          command: |
+            brew --version
+            brew install go@1.11
+            echo 'export PATH="/usr/local/opt/go@1.11/bin:$PATH"' >> $BASH_ENV
+
   macos_prepare_filesystem:
     steps:
       - run:
@@ -85,7 +94,8 @@ jobs:
     steps:
       - macos_check_version
       - macos_prepare_filesystem
-      - macos_install_go_1_12
+      # homebrew-core: 8ee7f0a64ff3915466d6b12402a61b5cb495be54
+      - macos_install_go_1_11
       - macos_set_ruby_2_6
       - gem_install_puma
       - go_test
