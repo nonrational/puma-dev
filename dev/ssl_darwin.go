@@ -34,6 +34,28 @@ func TrustCert(cert string) error {
 	return nil
 }
 
+func DeleteAllPumaDevCAFromDefaultKeychain() error {
+	deleteAllBashCommand := `
+	for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do 
+		security delete-certificate -t -Z $sha || security delete-certificate -Z $sha
+	done
+	`
+
+	deleteAllPumaDevTrustsCmd := exec.Command("sh", "-c", deleteAllBashCommand)
+
+	var stdout, stderr bytes.Buffer
+	deleteAllPumaDevTrustsCmd.Stdout = &stdout
+	deleteAllPumaDevTrustsCmd.Stderr = &stderr
+
+	if err := deleteAllPumaDevTrustsCmd.Run(); err != nil {
+		return err
+	}
+
+	fmt.Println("! NOTICE - REMOVED ALL CERTS LIKE \"Puma-dev CA\" FROM THE DEFAULT macOS KEYCHAIN")
+
+	return nil
+}
+
 func loginKeyChain() (string, error) {
 	discoverLoginKeychainCmd := exec.Command("sh", "-c", `security login-keychain | xargs | tr -d '"' | tr -d '\n'`)
 
