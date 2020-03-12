@@ -36,7 +36,6 @@ commands:
           name: configure ruby-2.6
           command: echo 'chruby ruby-2.6' >> $BASH_ENV
 
-
 jobs:
   test_catalina:
     macos:
@@ -83,22 +82,11 @@ jobs:
       - gem_install_puma
       - go_test
 
-  test_linux:
-    docker:
-      - image: circleci/golang:1.12
-      - image: circleci/ruby:2.6-stretch
-    working_directory: /go/src/puma/puma-dev
-    environment:
-      GO111MODULE: "on"
-    steps:
-      - gem_install_puma
-      - go_test
-
 workflows:
   version: 2
   test:
     jobs:
       - test_catalina
+      - test_high_sierra
       - test_mojave
-      - test_linux
 
