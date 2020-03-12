@@ -1,6 +1,6 @@
 module github.com/puma/puma-dev
 
-go 1.13
+go 1.11
 
 require (
 	github.com/avast/retry-go v2.5.0+incompatible
