@@ -11,7 +11,7 @@ commands:
       - checkout
       - run: go version
       - run: go mod download
-      - run: go test -v -coverprofile=coverage.out -covermode=atomic -timeout=300s ./...
+      - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=300s ./...
 
   macos_check_version:
     steps:
@@ -99,7 +99,7 @@ workflows:
   version: 2
   test:
     jobs:
-      # - test_catalina
+      - test_catalina
       - test_high_sierra
-      # - test_mojave
+      - test_mojave
 
