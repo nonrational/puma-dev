@@ -32,6 +32,8 @@ var (
 	fInstallPort = flag.Int("install-port", 80, "Port to run puma-dev on when installed")
 	fInstallTLS  = flag.Int("install-https-port", 443, "Port to run puma-dev for SSL on when installed")
 
+	fRemoveTrustedCert = flag.Bool("remove-trusted-cert", false, "Remove trusted CA(s) from macOS keychain")
+
 	fCleanup   = flag.Bool("cleanup", false, "Cleanup old system settings")
 	fUninstall = flag.Bool("uninstall", false, "Uninstall puma-dev as a user service")
 )
@@ -78,6 +80,13 @@ func main() {
 		err := dev.Stop()
 		if err != nil {
 			log.Fatalf("Unable to stop puma-dev servers: %s", err)
+		}
+		return
+	}
+
+	if *fRemoveTrustedCert {
+		if err := dev.DeleteAllPumaDevCAFromDefaultKeychain(); err != nil {
+			log.Fatalf("Unable to remove all Puma-dev CA certs from macOS keychain: %s", err)
 		}
 		return
 	}
