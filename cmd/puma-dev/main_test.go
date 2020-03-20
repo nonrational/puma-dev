@@ -238,7 +238,7 @@ func TestMainPumaDev(t *testing.T) {
 		appURL := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
 		appHost := "hyphen-bucket.hi.puma"
 
-		respBody := getUrlWithHost(t, appURL, appHost)
+		respBody := getURLWithHost(t, appURL, appHost)
 
 		// assert that the error we get is "not a directory"
 		assert.Regexp(t, "^stat /(.+/)+hyphen/bucket.hi: not a directory$", respBody)
