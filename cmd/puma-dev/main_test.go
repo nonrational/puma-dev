@@ -124,12 +124,12 @@ func TestMainPumaDev(t *testing.T) {
 	defer launchPumaDevBackgroundServerWithDefaults(t)()
 
 	testAppsToLink := map[string]string{
-		"rack-hi-puma":   "hipuma",
-		"rack-hi-puma":   "hi.puma",
-		"static-hi-puma": "static-site",
+		"hipuma":      "rack-hi-puma",
+		"hi.puma":     "rack-hi-puma",
+		"static-site": "static-hi-puma",
 	}
 
-	for etcAppDir, appLinkName := range testAppsToLink {
+	for appLinkName, etcAppDir := range testAppsToLink {
 		appPath := filepath.Join(ProjectRoot, "etc", etcAppDir)
 		linkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), appLinkName)
 
