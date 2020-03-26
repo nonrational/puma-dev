@@ -124,11 +124,12 @@ func TestMainPumaDev(t *testing.T) {
 	defer launchPumaDevBackgroundServerWithDefaults(t)()
 
 	testAppsToLink := map[string]string{
-		"rack-hi-puma":   "hipuma",
-		"static-hi-puma": "static-site",
+		"hipuma":      "rack-hi-puma",
+		"hi.puma":     "rack-hi-puma",
+		"static-site": "static-hi-puma",
 	}
 
-	for etcAppDir, appLinkName := range testAppsToLink {
+	for appLinkName, etcAppDir := range testAppsToLink {
 		appPath := filepath.Join(ProjectRoot, "etc", etcAppDir)
 		linkPath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), appLinkName)
 
@@ -222,6 +223,25 @@ func TestMainPumaDev(t *testing.T) {
 		statusHost := "static-site"
 
 		assert.Equal(t, "rack wuz here", getURLWithHost(t, reqURL, statusHost))
+	})
+
+	t.Run("bucket.s3.example.localhost", func(t *testing.T) {
+		// by now, ~/.puma-dev/hi.puma is a symlink to ./etc/rack-hi-puma
+
+		// create ~/.puma-dev/hyphen
+		regFilePath := filepath.Join(homedir.MustExpand(testAppLinkDirPath), "hyphen")
+		err := ioutil.WriteFile(regFilePath, []byte{}, 0644)
+		assert.NoError(t, err)
+		defer os.Remove(regFilePath)
+
+		// curl -H "Host: hyphen-bucket.hi.puma" http://localhost:9280/
+		appURL := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
+		appHost := "hyphen-bucket.hi.puma"
+
+		respBody := getURLWithHost(t, appURL, appHost)
+
+		// assert that the error we get is "not a directory"
+		assert.Regexp(t, "^stat /(.+/)+hyphen/bucket.hi: not a directory$", respBody)
 	})
 }
 
