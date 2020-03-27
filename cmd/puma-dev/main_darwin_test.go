@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,10 +13,6 @@ func TestMainPumaDev_Darwin(t *testing.T) {
 	defer launchPumaDevBackgroundServerWithDefaults(t)()
 
 	t.Run("resolve dns", func(t *testing.T) {
-		if runtime.GOOS != "darwin" {
-			t.SkipNow()
-		}
-
 		PumaDevDNSDialer := func(ctx context.Context, network, address string) (net.Conn, error) {
 			dnsAddress := fmt.Sprintf("127.0.0.1:%d", *fDNSPort)
 			d := net.Dialer{}

@@ -59,7 +59,6 @@ func (d *DNSResponder) handleDNS(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(m)
 }
 
-// Serve binds to
 func (d *DNSResponder) Serve(domains []string) error {
 	for _, domain := range domains {
 		dns.HandleFunc(domain+".", d.handleDNS)
