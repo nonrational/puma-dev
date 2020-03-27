@@ -1,8 +1,8 @@
 package dev
 
 import (
+	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/miekg/dns"
@@ -68,23 +68,32 @@ func (d *DNSResponder) Serve(domains []string) error {
 		addr = DefaultAddress
 	}
 
-	var wg sync.WaitGroup
+	protocols := map[string](chan error){
+		"udp": make(chan error),
+		"tcp": make(chan error),
+	}
 
-	wg.Add(2)
+	for protKey, chanVal := range protocols {
+		protocol := protKey
+		channel := chanVal
 
-	go func() {
-		defer wg.Done()
-		server := &dns.Server{Addr: addr, Net: "udp", TsigSecret: nil}
-		server.ListenAndServe()
-	}()
+		go func() {
+			server := &dns.Server{Addr: addr, Net: protocol, TsigSecret: nil}
+			err := server.ListenAndServe()
 
-	go func() {
-		defer wg.Done()
-		server := &dns.Server{Addr: addr, Net: "tcp", TsigSecret: nil}
-		server.ListenAndServe()
-	}()
+			if err != nil {
+				fmt.Printf("%v\n", err)
+				channel <- err
+			}
 
-	wg.Wait()
+			close(channel)
+		}()
+	}
 
-	return nil
+	select {
+	case udpErr := <-protocols["udp"]:
+		return udpErr
+	case tcpErr := <-protocols["tcp"]:
+		return tcpErr
+	}
 }
