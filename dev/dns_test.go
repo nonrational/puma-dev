@@ -23,32 +23,23 @@ func TestServe(t *testing.T) {
 		close(errChan)
 	}()
 
-	tcpErr := retry.Do(
-		func() error {
-			if _, err := net.DialTimeout("tcp", "localhost:31337", time.Duration(10*time.Second)); err != nil {
-				return err
-			}
-			tDNSResponder.tcpServer.Shutdown()
-			return nil
-		},
-		retry.OnRetry(func(n uint, err error) {
-			log.Printf("#%d: %s\n", n, err)
-		}),
-	)
+	shortTimeout := time.Duration(5 * time.Second)
+	protocols := []string{"tcp", "udp"}
 
-	udpErr := retry.Do(
-		func() error {
-			if _, err := net.DialTimeout("udp", "localhost:31337", time.Duration(10*time.Second)); err != nil {
-				return err
-			}
-			tDNSResponder.udpServer.Shutdown()
-			return nil
-		},
-		retry.OnRetry(func(n uint, err error) {
-			log.Printf("#%d: %s\n", n, err)
-		}),
-	)
+	for _, protocol := range protocols {
+		dialError := retry.Do(
+			func() error {
+				if _, err := net.DialTimeout(protocol, "localhost:31337", shortTimeout); err != nil {
+					return err
+				}
+				tDNSResponder.tcpServer.Shutdown()
+				return nil
+			},
+			retry.OnRetry(func(n uint, err error) {
+				log.Printf("#%d: %s\n", n, err)
+			}),
+		)
 
-	assert.NoError(t, tcpErr)
-	assert.NoError(t, udpErr)
+		assert.NoError(t, dialError)
+	}
 }
