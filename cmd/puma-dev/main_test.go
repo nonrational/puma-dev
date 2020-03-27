@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -49,6 +50,10 @@ func TestMainPumaDev(t *testing.T) {
 	}
 
 	t.Run("resolve dns", func(t *testing.T) {
+		if runtime.GOOS != "darwin" {
+			t.SkipNow()
+		}
+
 		PumaDevDNSDialer := func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{}
 			return d.DialContext(ctx, "udp", fmt.Sprintf("127.0.0.1:%v", *fPort))
