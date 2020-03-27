@@ -1,11 +1,11 @@
 package dev
 
 import (
-	"fmt"
 	"net"
 	"time"
 
 	"github.com/miekg/dns"
+	"gopkg.in/tomb.v2"
 )
 
 const DefaultAddress = ":9253"
@@ -68,32 +68,17 @@ func (d *DNSResponder) Serve(domains []string) error {
 		addr = DefaultAddress
 	}
 
-	protocols := map[string](chan error){
-		"udp": make(chan error),
-		"tcp": make(chan error),
-	}
+	var t tomb.Tomb
 
-	for protKey, chanVal := range protocols {
-		protocol := protKey
-		channel := chanVal
+	t.Go(func() error {
+		server := &dns.Server{Addr: addr, Net: "udp", TsigSecret: nil}
+		return server.ListenAndServe()
+	})
 
-		go func() {
-			server := &dns.Server{Addr: addr, Net: protocol, TsigSecret: nil}
-			err := server.ListenAndServe()
+	t.Go(func() error {
+		server := &dns.Server{Addr: addr, Net: "tcp", TsigSecret: nil}
+		return server.ListenAndServe()
+	})
 
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				channel <- err
-			}
-
-			close(channel)
-		}()
-	}
-
-	select {
-	case udpErr := <-protocols["udp"]:
-		return udpErr
-	case tcpErr := <-protocols["tcp"]:
-		return tcpErr
-	}
+	return t.Wait()
 }
