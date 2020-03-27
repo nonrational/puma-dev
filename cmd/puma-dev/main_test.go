@@ -56,7 +56,8 @@ func TestMainPumaDev(t *testing.T) {
 
 		PumaDevDNSDialer := func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{}
-			return d.DialContext(ctx, "udp", fmt.Sprintf("127.0.0.1:%v", *fPort))
+			// TODO: use fPort if available, break out this test into main_darwin_test.go
+			return d.DialContext(ctx, "udp", "127.0.0.1:9253")
 		}
 
 		r := net.Resolver{
