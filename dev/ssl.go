@@ -10,6 +10,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -97,9 +98,8 @@ func SetupOurCert() error {
 	certPath := filepath.Join(dir, "cert.pem")
 
 	tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath)
-
 	if err == nil {
-		// Existing valid puma-dev CA keypair found
+		log.Println("Existing valid puma-dev CA keypair found. Assuming previously trusted.")
 		CACert = &tlsCert
 		return nil
 	}
