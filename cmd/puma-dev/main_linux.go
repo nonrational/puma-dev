@@ -79,7 +79,7 @@ func main() {
 
 	go func() {
 		<-shutdown
-		// fmt.Printf("! Shutdown requested\n")
+		fmt.Printf("! Shutdown requested\n")
 		pool.Purge()
 		os.Exit(0)
 	}()
