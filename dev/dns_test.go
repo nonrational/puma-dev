@@ -37,9 +37,13 @@ func TestServeDNS_TCP_UDP(t *testing.T) {
 					return err
 				}
 
-				if server := serverLookup(); server != nil {
-					server.Shutdown()
-				}
+				defer func() {
+					if server := serverLookup(); server != nil {
+						server.Shutdown()
+					} else {
+						assert.Fail(t, "tDNSResponder", "%s was nil", protocol)
+					}
+				}()
 
 				return nil
 			},
