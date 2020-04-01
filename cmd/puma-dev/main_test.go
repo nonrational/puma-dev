@@ -265,6 +265,7 @@ func launchPumaDevBackgroundServerWithDefaults(t *testing.T) func() {
 	return func() {
 		RemoveDirectoryOrFail(t, testAppLinkDirPath)
 		shutdown <- syscall.SIGTERM
+		time.Sleep(5 * time.Second)
 	}
 }
 
