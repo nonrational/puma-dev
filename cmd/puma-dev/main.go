@@ -8,13 +8,21 @@ import (
 )
 
 var (
+	Continue       = CommandResult{-1, false}
 	EarlyExitClean = CommandResult{0, true}
 	EarlyExitError = CommandResult{1, true}
-	Continue       = CommandResult{-1, false}
+	Version        = "devel"
 
 	fVersion = flag.Bool("V", false, "display version info")
-	Version  = "devel"
 )
+
+// func (msg string, vars ...interface{}) {
+
+// }
+
+// func Cerrf(msg string, vars ...interface{}) {
+
+// }
 
 type CommandResult struct {
 	exitStatusCode int

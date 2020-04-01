@@ -29,12 +29,13 @@ func TestCommand_link_noArgs(t *testing.T) {
 	defer MakeDirectoryOrFail(t, appDir)()
 
 	WithWorkingDirectory(appDir, func() {
-		actual := WithStdoutCaptured(func() {
-			if err := command(); err != nil {
-				assert.Fail(t, err.Error())
-			}
-		})
+		resetAndRead := CaptureStdout()
 
+		if err := command(); err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		actual, _ := resetAndRead()
 		expected := fmt.Sprintf("+ App 'my-test-puma-dev-application' created, linked to '%s'\n", appDir)
 		assert.Equal(t, expected, actual)
 	})
@@ -49,11 +50,13 @@ func TestCommand_link_withNameOverride(t *testing.T) {
 	StubCommandLineArgs("link", "-n", "anothername", tmpCwd)
 
 	WithWorkingDirectory(tmpCwd, func() {
-		actual := WithStdoutCaptured(func() {
-			if err := command(); err != nil {
-				assert.Fail(t, err.Error())
-			}
-		})
+		resetAndRead := CaptureStdout()
+
+		if err := command(); err != nil {
+			assert.Fail(t, err.Error())
+		}
+
+		actual, _ := resetAndRead()
 
 		assert.Equal(t, "+ App 'anothername' created, linked to '/tmp/puma-dev-example-command-link-noargs'\n", actual)
 	})
@@ -78,20 +81,24 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 	defer MakeDirectoryOrFail(t, appDir2)()
 
 	StubCommandLineArgs("link", "-n", appAlias, appDir1)
-	actual1 := WithStdoutCaptured(func() {
-		if err := command(); err != nil {
-			assert.Fail(t, err.Error())
-		}
-	})
+	resetAndRead1 := CaptureStdout()
+
+	if err := command(); err != nil {
+		assert.Fail(t, err.Error())
+	}
+
+	actual1, _ := resetAndRead1()
 
 	assert.Equal(t, fmt.Sprintf("+ App '%s' created, linked to '%s'\n", appAlias, appDir1), actual1)
 
 	StubCommandLineArgs("link", "-n", appAlias, appDir2)
-	actual2 := WithStdoutCaptured(func() {
-		if err := command(); err != nil {
-			assert.Fail(t, err.Error())
-		}
-	})
+	resetAndRead2 := CaptureStdout()
+
+	if err := command(); err != nil {
+		assert.Fail(t, err.Error())
+	}
+
+	actual2, _ := resetAndRead2()
 
 	assert.Equal(t, fmt.Sprintf("! App '%s' already exists, pointed at '%s'\n", appAlias, appDir1), actual2)
 

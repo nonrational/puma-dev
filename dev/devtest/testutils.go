@@ -1,7 +1,6 @@
 package devtest
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -85,37 +84,34 @@ func EnsurePumaDevDirectory() {
 	}
 }
 
-// WithStdoutCaptured executes the passed function and returns a string
-// containing the stdout of the executed function.
-func WithStdoutCaptured(f func()) string {
-	osStdout := os.Stdout
+// CaptureStdout returns a function to invoke containing the stdout of anything
+// between the first call and the returned function invocation.
+func CaptureStdout() func() (string, error) {
 	r, w, err := os.Pipe()
 
 	if err != nil {
 		panic(err)
 	}
 
+	done := make(chan error, 1)
+
+	osStdout := os.Stdout
 	os.Stdout = w
 
-	outC := make(chan string)
+	var buf strings.Builder
 
 	go func() {
-		var buf bytes.Buffer
-
-		if _, err := io.Copy(&buf, r); err != nil {
-			panic(err)
-		}
-
-		outC <- buf.String()
+		_, err := io.Copy(&buf, r)
+		r.Close()
+		done <- err
 	}()
 
-	f()
-
-	w.Close()
-	os.Stdout = osStdout
-	out := <-outC
-
-	return out
+	return func() (string, error) {
+		os.Stdout = osStdout
+		w.Close()
+		err := <-done
+		return buf.String(), err
+	}
 }
 
 // RemoveDirectoryOrFail removes a directory (and its contents) or fails the test.

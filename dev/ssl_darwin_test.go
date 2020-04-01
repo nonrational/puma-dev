@@ -45,13 +45,15 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 	assert.False(t, FileExists(liveCertPath))
 	assert.False(t, FileExists(liveKeyPath))
 
-	certInstallStdOut := WithStdoutCaptured(func() {
-		err := SetupOurCert()
-		assert.Nil(t, err)
+	resetAndRead := CaptureStdout()
 
-		assert.True(t, FileExists(liveCertPath))
-		assert.True(t, FileExists(liveKeyPath))
-	})
+	err := SetupOurCert()
+	assert.Nil(t, err)
+
+	assert.True(t, FileExists(liveCertPath))
+	assert.True(t, FileExists(liveKeyPath))
+
+	certInstallStdOut, _ := resetAndRead()
 
 	assert.Regexp(t, "^\\* Adding certification to login keychain as trusted\\n", certInstallStdOut)
 	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n", certInstallStdOut)
@@ -65,11 +67,13 @@ func TestSetupOurCert_InteractiveCertificateInstall(t *testing.T) {
 }
 
 func TestTrustCert_Darwin_noCertProvided(t *testing.T) {
-	stdOut := WithStdoutCaptured(func() {
-		err := TrustCert("/does/not/exist")
-		assert.NotNil(t, err)
-		assert.Regexp(t, "Error reading file /does/not/exist\\n$", err)
-	})
+	resetAndRead := CaptureStdout()
+
+	err := TrustCert("/does/not/exist")
+	assert.NotNil(t, err)
+	assert.Regexp(t, "Error reading file /does/not/exist\\n$", err)
+
+	stdOut, _ := resetAndRead()
 
 	assert.Regexp(t, "^* Adding certification to login keychain as trusted", stdOut)
 	assert.Regexp(t, "! There is probably a dialog open that requires you to authenticate\\n$", stdOut)
