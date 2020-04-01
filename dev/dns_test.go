@@ -1,7 +1,6 @@
 package dev
 
 import (
-	"log"
 	"net"
 	"testing"
 	"time"
@@ -13,12 +12,13 @@ import (
 
 var tDNSResponder DNSResponder
 
-func TestServe(t *testing.T) {
+func TestServeDNS_TCP_UDP(t *testing.T) {
 	tDNSResponder.Address = "localhost:31337"
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
+	domainList := []string{"test"}
 
 	go func() {
-		if err := tDNSResponder.Serve([]string{"test"}); err != nil {
+		if err := tDNSResponder.Serve(domainList); err != nil {
 			errChan <- err
 		}
 		close(errChan)
@@ -39,11 +39,10 @@ func TestServe(t *testing.T) {
 				serverLookup().Shutdown()
 				return nil
 			},
-			retry.OnRetry(func(n uint, err error) {
-				log.Printf("#%d: %s\n", n, err)
-			}),
 		)
 
 		assert.NoError(t, dialError)
 	}
+
+	assert.NoError(t, <-errChan)
 }
