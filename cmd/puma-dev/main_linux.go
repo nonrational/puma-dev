@@ -35,7 +35,7 @@ func main() {
 	if *fStop {
 		err := dev.Stop()
 		if err != nil {
-			log.Fatalf("Unable to stop puma-dev servers: %s", err)
+			StdLog.Fatalf("Unable to stop puma-dev servers: %s", err)
 		}
 		return
 	}
@@ -47,12 +47,12 @@ func main() {
 
 	dir, err := homedir.Expand(*fDir)
 	if err != nil {
-		log.Fatalf("Unable to expand dir: %s", err)
+		StdLog.Fatalf("Unable to expand dir: %s", err)
 	}
 
 	err = os.MkdirAll(dir, 0755)
 	if err != nil {
-		log.Fatalf("Unable to create dir '%s': %s", dir, err)
+		StdLog.Fatalf("Unable to create dir '%s': %s", dir, err)
 	}
 
 	var events dev.Events
@@ -79,37 +79,39 @@ func main() {
 
 	go func() {
 		<-stop
-		fmt.Printf("! Shutdown requested\n")
+		StdLog.Printf("! Shutdown requested\n")
 		pool.Purge()
 		os.Exit(0)
 	}()
 
 	err = dev.SetupOurCert()
 	if err != nil {
-		log.Fatalf("Unable to setup TLS cert: %s", err)
+		StdLog.Fatalf("Unable to setup TLS cert: %s", err)
 	}
 
-	fmt.Printf("* Directory for apps: %s\n", dir)
-	fmt.Printf("* Domains: %s\n", strings.Join(domains, ", "))
-	fmt.Printf("* HTTP Server port: %d\n", *fHTTPPort)
-	fmt.Printf("* HTTPS Server port: %d\n", *fTLSPort)
+	StdLog.Printf("* Directory for apps: %s\n", dir)
+	StdLog.Printf("* Domains: %s\n", strings.Join(domains, ", "))
+	StdLog.Printf("* HTTP Server port: %d\n", *fHTTPPort)
+	StdLog.Printf("* HTTPS Server port: %d\n", *fTLSPort)
 
 	var http dev.HTTPServer
 
-	http.Address = fmt.Sprintf(":%d", *fHTTPPort)
-	http.TLSAddress = fmt.Sprintf(":%d", *fTLSPort)
+	http.Address = StdLog.Sprintf(":%d", *fHTTPPort)
+	http.TLSAddress = StdLog.Sprintf(":%d", *fTLSPort)
 	http.Pool = &pool
 	http.Debug = *fDebug
 	http.Events = &events
 
 	http.Setup()
 
-	fmt.Printf("! Puma dev listening on http and https\n")
+	StdLog.Printf("! Puma dev listening on http and https\n")
 
 	go http.ServeTLS()
 
 	err = http.Serve()
 	if err != nil {
-		log.Fatalf("Error listening: %s", err)
+		StdLog.Fatalf("Error listening: %s", err)
 	}
 }
+
+func 

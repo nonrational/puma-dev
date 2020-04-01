@@ -70,9 +70,9 @@ func link() error {
 	if err == nil {
 		dest, err := os.Readlink(dest)
 		if err == nil {
-			fmt.Printf("! App '%s' already exists, pointed at '%s'\n", *name, dest)
+			StdLog.Printf("! App '%s' already exists, pointed at '%s'\n", *name, dest)
 		} else {
-			fmt.Printf("! App '%s' already exists'\n", *name)
+			StdLog.Printf("! App '%s' already exists'\n", *name)
 		}
 		return nil
 	}
@@ -82,7 +82,7 @@ func link() error {
 		return errors.Context(err, "creating symlink")
 	}
 
-	fmt.Printf("+ App '%s' created, linked to '%s'\n", *name, dir)
+	StdLog.Printf("+ App '%s' created, linked to '%s'\n", *name, dir)
 
 	return nil
 }

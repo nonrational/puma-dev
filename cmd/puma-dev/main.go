@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"runtime"
 )
@@ -14,6 +14,8 @@ var (
 
 	fVersion = flag.Bool("V", false, "display version info")
 	Version  = "devel"
+	StdLog   = log.New(os.Stdout, "", 1)
+	ErrLog   = log.New(os.Stderr, "", 1)
 )
 
 type CommandResult struct {
@@ -29,7 +31,7 @@ func allCheck() {
 
 func execWithExitStatus() CommandResult {
 	if *fVersion {
-		fmt.Printf("Version: %s (%s)\n", Version, runtime.Version())
+		StdLog.Printf("Version: %s (%s)\n", Version, runtime.Version())
 		return EarlyExitClean
 	}
 
@@ -37,7 +39,7 @@ func execWithExitStatus() CommandResult {
 		err := command()
 
 		if err != nil {
-			fmt.Printf("Error: %s\n", err)
+			StdLog.Printf("Error: %s\n", err)
 			return EarlyExitError
 		}
 
@@ -48,10 +50,13 @@ func execWithExitStatus() CommandResult {
 }
 
 func init() {
+	StdLog.SetFlags(0)
+	ErrLog.SetFlags(0)
+
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		ErrLog.Printf("Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 
-		fmt.Fprintf(os.Stderr, "\nAvailable subcommands: link\n")
+		ErrLog.Printf("\nAvailable subcommands: link\n")
 	}
 }
