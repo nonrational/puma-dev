@@ -24,7 +24,7 @@ func TestServeDNS_TCP_UDP(t *testing.T) {
 		close(errChan)
 	}()
 
-	shortTimeout := time.Duration(5 * time.Second)
+	shortTimeout := time.Duration(1 * time.Second)
 	protocols := map[string](func() *dns.Server){
 		"tcp": func() *dns.Server { return tDNSResponder.tcpServer },
 		"udp": func() *dns.Server { return tDNSResponder.udpServer },
@@ -36,7 +36,11 @@ func TestServeDNS_TCP_UDP(t *testing.T) {
 				if _, err := net.DialTimeout(protocol, "localhost:31337", shortTimeout); err != nil {
 					return err
 				}
-				serverLookup().Shutdown()
+
+				if server := serverLookup(); server != nil {
+					server.Shutdown()
+				}
+
 				return nil
 			},
 		)
