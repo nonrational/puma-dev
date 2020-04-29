@@ -16,8 +16,8 @@ jobs:
         go-version: [1.13.x]
         ruby-version: [2.5]
     runs-on: ${{ matrix.os }}
-    env:
-      GOPATH: ${{ github.workspace }}
+    # env:
+    #   GOPATH: ${{ github.workspace }}
     #   GO111MODULE: off
 
     name: puma-dev ${{ matrix.go-version }} ${{ matrix.os }}
@@ -36,7 +36,7 @@ jobs:
 
       - run: gem install puma
 
-      - if: ${{ matrix.os == 'macos-latest' }}
+      - if: matrix.os == 'macos-latest'
         run: |
           sw_vers
           sudo mkdir -p /etc/resolver;
