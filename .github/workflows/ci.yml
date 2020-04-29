@@ -31,11 +31,10 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
 
       - uses: actions/checkout@v2
-        with:
-          path: ./src/github.com/puma/puma-dev
+        # with:
+          # path: ./src/github.com/puma/puma-dev
 
-      - run: |
-          gem install puma
+      - run: gem install puma
 
       - if: ${{ matrix.os == 'macos-latest' }}
         run: |
@@ -45,8 +44,8 @@ jobs:
           sudo chown :staff /etc/resolver;
 
       - name: go test
-        with:
-          path: ./src/github.com/puma/puma-dev
+        # with:
+          # path: ./src/github.com/puma/puma-dev
         run: |
           go version
           go mod download
