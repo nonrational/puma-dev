@@ -16,8 +16,8 @@ jobs:
         go-version: [1.13.x]
         ruby-version: [2.5]
     runs-on: ${{ matrix.os }}
-    # env:
-    #   GOPATH: ${{ github.workspace }}
+    env:
+      GOPATH: ${{ github.workspace }}
     #   GO111MODULE: off
 
     name: puma-dev ${{ matrix.go-version }} ${{ matrix.os }}
@@ -48,3 +48,5 @@ jobs:
           go version
           go mod download
           go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=300s ./...
+        with:
+          path: ./src/github.com/puma/puma-dev
