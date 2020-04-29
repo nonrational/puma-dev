@@ -6,19 +6,16 @@ on:
   pull_request:
     branches: [ master ]
 
+# TODO: will fail to build on forks
+
 jobs:
   test:
     strategy:
       matrix:
-        #os: [macos-latest, ubuntu-latest]
-        #go-version: [1.13.x, 1.14.x]
-        os: [macos-latest]
-        go-version: [1.13.x]
+        os: [macos-latest, ubuntu-latest]
+        go-version: [1.13.x, 1.14.x]
         ruby-version: [2.5]
     runs-on: ${{ matrix.os }}
-    # env:
-    #   GOPATH: ${{ github.workspace }}
-    #   GO111MODULE: off
 
     name: puma-dev ${{ matrix.go-version }} ${{ matrix.os }}
     steps:
@@ -31,8 +28,6 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
 
       - uses: actions/checkout@v2
-        # with:
-          # path: ./src/github.com/puma/puma-dev
 
       - run: gem install puma
 
@@ -44,8 +39,6 @@ jobs:
           sudo chown :staff /etc/resolver;
 
       - name: go test
-        # with:
-          # path: ./src/github.com/puma/puma-dev
         run: |
           go version
           go mod download
