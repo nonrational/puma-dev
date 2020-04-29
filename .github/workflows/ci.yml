@@ -10,8 +10,10 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
-        go-version: [1.13.x, 1.14.x]
+        #os: [macos-latest, ubuntu-latest]
+        #go-version: [1.13.x, 1.14.x]
+        os: [macos-latest]
+        go-version: [1.13.x]
         ruby-version: [2.5]
 
     runs-on: ${{ matrix.os }}
@@ -21,9 +23,6 @@ jobs:
 
     name: puma-dev ${{ matrix.go-version }} ${{ matrix.os }}
     steps:
-      - uses: technote-space/auto-cancel-redundant-job@v1
-        if: github.event_name == 'pull_request'
-
       - uses: actions/setup-go@v1
         with:
           go-version: ${{ matrix.go-version }}
