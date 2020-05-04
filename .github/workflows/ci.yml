@@ -29,7 +29,8 @@ jobs:
 
       - run: gem install puma
 
-      - if: matrix.os == 'macos-latest'
+      - name: Set up /etc/resolver
+        if: matrix.os == 'macos-latest'
         run: |
           sw_vers
           sudo mkdir -p /etc/resolver;
@@ -45,6 +46,7 @@ jobs:
       - run: security -v default-keychain -s ~/Library/puma-dev.keychain-db;
         if: matrix.os == 'macos-latest'
       - run: security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db;
+        if: matrix.os == 'macos-latest'
 
       - run: go mod download
 
