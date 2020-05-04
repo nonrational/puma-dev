@@ -51,7 +51,7 @@ jobs:
           security -v default-keychain -s puma-dev.keychain-db
 
           echo '> Set puma-dev as login keychain'
-          security -v login-keychain -s puma-dev.keychain-db
+          security -v login-keychain -d user -s puma-dev.keychain-db
 
           echo '> Unlock puma-dev keychain'
           security -v unlock-keychain -p 'puma-dev-test-keychain-password' puma-dev.keychain-db
