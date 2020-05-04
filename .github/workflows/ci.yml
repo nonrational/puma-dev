@@ -36,27 +36,32 @@ jobs:
           sudo mkdir -p /etc/resolver;
           sudo chmod 0775 /etc/resolver;
           sudo chown :staff /etc/resolver;
-
+      
       - name: Set up an unlocked keychain-db as default-keychain and login-keychain
         if: matrix.os == 'macos-latest'
         run: |
-          security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
+          echo '> Creating puma-dev.keychain-db'
+          security create-keychain -p 'puma-dev-test-keychain-password' puma-dev.keychain-db
+          security set-keychain-settings -lut 72000 puma-dev.keychain-db
           
-          security -v set-keychain-settings -lut 72000 ~/Library/puma-dev.keychain-db
-          
-          security list-keychains
-          security list-keychains | xargs security -v list-keychains -s "~/Library/puma-dev.keychain-db"
-          security list-keychains
+          echo '> Adding puma-dev.keychain-db to the list of keychains'
+          security list-keychains | xargs security -v list-keychains -s $PWD/puma-dev.keychain-db
 
-          security -v default-keychain
-          security -v default-keychain -s ~/Library/puma-dev.keychain-db
-          security -v default-keychain
+          echo '> Set puma-dev as default keychain'
+          security -v default-keychain -s puma-dev.keychain-db
+
+          echo '> Set puma-dev as login keychain'
+          security -v login-keychain -s puma-dev.keychain-db
+
+          echo '> Unlock puma-dev keychain'
+          security -v unlock-keychain -p 'puma-dev-test-keychain-password' puma-dev.keychain-db
           
-          security -v login-keychain
-          security -v login-keychain -s ~/Library/puma-dev.keychain-db
-          security -v login-keychain
-          
-          security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
+          echo '> Listing keychains...'
+          security list-keychains
+          echo '| Login" 
+          security login-keychain 
+          echo '| Default" 
+          security default-keychain 
 
       - run: go mod download
 
