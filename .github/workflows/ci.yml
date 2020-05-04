@@ -26,9 +26,9 @@ jobs:
           
           echo '> Listing keychains...'
           security list-keychains
-          echo '| Login" 
+          echo '| Login'
           security login-keychain 
-          echo '| Default" 
+          echo '| Default' 
           security default-keychain 
 
           echo '> Creating puma-dev.keychain-db'
@@ -49,9 +49,9 @@ jobs:
           
           echo '> Listing keychains...'
           security list-keychains
-          echo '| Login" 
+          echo '| Login'
           security login-keychain 
-          echo '| Default" 
+          echo '| Default' 
           security default-keychain 
 
       - uses: actions/setup-go@v1
