@@ -38,6 +38,7 @@ jobs:
           sudo chown :staff /etc/resolver;
 
       - name: Set up an unlocked keychain-db as default-keychain and login-keychain
+        if: matrix.os == 'macos-latest'
         run: |
           security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
           
