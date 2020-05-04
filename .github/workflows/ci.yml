@@ -15,7 +15,7 @@ jobs:
         go-version: [1.13.x, 1.14.x]
         ruby-version: [2.5]
 
-        name: ${{ matrix.os }} / go-${{ matrix.go-version }}
+    name: ${{ matrix.os }} / go-${{ matrix.go-version }}
     steps:
       - uses: actions/setup-go@v1
         with:
@@ -29,9 +29,9 @@ jobs:
 
       - run: gem install puma
 
-      - name: 'Setup DNS filesystem in /etc/resolver'
-        if: matrix.os == 'macos-latest'
+      - if: matrix.os == 'macos-latest'
         run: |
+          sw_vers
           sudo mkdir -p /etc/resolver;
           sudo chmod 0775 /etc/resolver;
           sudo chown :staff /etc/resolver;
@@ -40,11 +40,11 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: |
           # h/t: https://github.com/bitrise-steplib/steps-certificate-and-profile-installer/blob/2bba6a2304ffd0abfdf440d79b1e4fa261a31517/main.go#L409-L544
-          security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
-          security -v set-keychain-settings -lut 72000 ~/Library/puma-dev.keychain-db
-          security    list-keychains | xargs security -v list-keychains -s 
-          security -v default-keychain -s ~/Library/puma-dev.keychain-db
-          security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
+          security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db;
+          security -v set-keychain-settings -lut 72000 ~/Library/puma-dev.keychain-db;
+          security    list-keychains | xargs security -v list-keychains -s; 
+          security -v default-keychain -s ~/Library/puma-dev.keychain-db;
+          security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db;
 
       - run: go mod download
 
