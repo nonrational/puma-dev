@@ -39,23 +39,23 @@ jobs:
 
       - name: Set up an unlocked keychain-db as default-keychain and login-keychain
         run: |
-        security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
-        
-        security -v set-keychain-settings -lut 72000 ~/Library/puma-dev.keychain-db
-        
-        security list-keychains
-        security list-keychains | xargs security -v list-keychains -s "~/Library/puma-dev.keychain-db"
-        security list-keychains
+          security -v create-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
+          
+          security -v set-keychain-settings -lut 72000 ~/Library/puma-dev.keychain-db
+          
+          security list-keychains
+          security list-keychains | xargs security -v list-keychains -s "~/Library/puma-dev.keychain-db"
+          security list-keychains
 
-        security -v default-keychain
-        security -v default-keychain -s ~/Library/puma-dev.keychain-db
-        security -v default-keychain
-        
-        security -v login-keychain
-        security -v login-keychain -s ~/Library/puma-dev.keychain-db
-        security -v login-keychain
-        
-        security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
+          security -v default-keychain
+          security -v default-keychain -s ~/Library/puma-dev.keychain-db
+          security -v default-keychain
+          
+          security -v login-keychain
+          security -v login-keychain -s ~/Library/puma-dev.keychain-db
+          security -v login-keychain
+          
+          security -v unlock-keychain -p 'puma-dev-test-keychain-password' ~/Library/puma-dev.keychain-db
 
       - run: go mod download
 
