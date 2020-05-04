@@ -17,31 +17,20 @@ jobs:
 
     name: ${{ matrix.os }} / go-${{ matrix.go-version }}
     steps:
-      - uses: actions/setup-go@v1
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - uses: actions/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby-version }}
-
-      - uses: actions/checkout@v2
-
-      - run: gem install puma
-
-      - name: Set up /etc/resolver
-        if: matrix.os == 'macos-latest'
-        run: |
-          sw_vers
-          sudo mkdir -p /etc/resolver;
-          sudo chmod 0775 /etc/resolver;
-          sudo chown :staff /etc/resolver;
-      
       - name: Set up an unlocked keychain-db as default-keychain and login-keychain
         if: matrix.os == 'macos-latest'
         run: |
           mkdir -p /Users/runner/Library/Keychains/
           
+          ls -la /Users/runner/Library/Keychains/
+          
+          echo '> Listing keychains...'
+          security list-keychains
+          echo '| Login" 
+          security login-keychain 
+          echo '| Default" 
+          security default-keychain 
+
           echo '> Creating puma-dev.keychain-db'
           security create-keychain -p 'puma-dev-test-keychain-password' /Users/runner/Library/Keychains/puma-dev.keychain-db
           security set-keychain-settings -lut 72000 /Users/runner/Library/Keychains/puma-dev.keychain-db
@@ -64,6 +53,27 @@ jobs:
           security login-keychain 
           echo '| Default" 
           security default-keychain 
+
+      - uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - uses: actions/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+
+      - uses: actions/checkout@v2
+
+      - run: gem install puma
+
+      - name: Set up /etc/resolver
+        if: matrix.os == 'macos-latest'
+        run: |
+          sw_vers
+          sudo mkdir -p /etc/resolver;
+          sudo chmod 0775 /etc/resolver;
+          sudo chown :staff /etc/resolver;
+      
 
       - run: go mod download
 
