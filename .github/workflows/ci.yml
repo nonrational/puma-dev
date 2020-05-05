@@ -26,7 +26,7 @@ jobs:
           
           security -v unlock-keychain -p 'macos' /Users/runner/Library/Keychains/login.keychain-db
 
-          security dump-keychain
+          security dump-keychain 
 
       - uses: actions/setup-go@v1
         with:
