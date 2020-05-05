@@ -16,43 +16,17 @@ jobs:
         ruby-version: [2.5]
 
     name: ${{ matrix.os }} / go-${{ matrix.go-version }}
+
     steps:
       - name: Set up an unlocked keychain-db as default-keychain and login-keychain
         if: matrix.os == 'macos-latest'
         run: |
-          mkdir -p /Users/runner/Library/Keychains/
+          mv /Users/runner/Library/Keychains/login.keychain-db /Users/runner/Library/Keychains/login.keychain-db.original
+          mv ./etc/login.keychain-db /Users/runner/Library/Keychains/login.keychain-db
           
-          ls -la /Users/runner/Library/Keychains/
-          
-          echo '> Listing keychains...'
-          security list-keychains
-          echo '| Login'
-          security login-keychain 
-          echo '| Default' 
-          security default-keychain 
+          security -v unlock-keychain -p 'macos' /Users/runner/Library/Keychains/login.keychain-db
 
-          echo '> Creating puma-dev.keychain-db'
-          security create-keychain -p 'puma-dev-test-keychain-password' /Users/runner/Library/Keychains/puma-dev.keychain-db
-          security set-keychain-settings -lut 72000 /Users/runner/Library/Keychains/puma-dev.keychain-db
-          
-          echo '> Adding puma-dev.keychain-db to the list of keychains'
-          security list-keychains | xargs security -v list-keychains -s /Users/runner/Library/Keychains/puma-dev.keychain-db
-
-          echo '> Set puma-dev as default keychain'
-          security -v default-keychain -s /Users/runner/Library/Keychains/puma-dev.keychain-db
-
-          echo '> Set puma-dev as login keychain'
-          security -v login-keychain -d user -s /Users/runner/Library/Keychains/puma-dev.keychain-db
-
-          echo '> Unlock puma-dev keychain'
-          security -v unlock-keychain -p 'puma-dev-test-keychain-password' /Users/runner/Library/Keychains/puma-dev.keychain-db
-          
-          echo '> Listing keychains...'
-          security list-keychains
-          echo '| Login'
-          security login-keychain 
-          echo '| Default' 
-          security default-keychain 
+          security dump-keychain
 
       - uses: actions/setup-go@v1
         with:
