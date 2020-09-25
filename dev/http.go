@@ -18,11 +18,12 @@ import (
 )
 
 type HTTPServer struct {
-	Address    string
-	TLSAddress string
-	Pool       *AppPool
-	Debug      bool
-	Events     *Events
+	Address            string
+	TLSAddress         string
+	Pool               *AppPool
+	Debug              bool
+	Events             *Events
+	IgnoredStaticPaths []string
 
 	mux       *pat.PatternServeMux
 	transport *httpu.Transport
