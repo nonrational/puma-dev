@@ -148,7 +148,7 @@ func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
 		return err
 	}
 
-	if app.Public && req.URL.Path != "/" {
+	if h.shouldServePublicPathForApp(app, req) {
 		safeURLPath := path.Clean(req.URL.Path)
 		path := filepath.Join(app.dir, "public", safeURLPath)
 
@@ -177,6 +177,26 @@ func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		h.proxy.ServeHTTP(w, req)
 	}
+}
+
+func (h *HTTPServer) shouldServePublicPathForApp(a *App, req *http.Request) bool {
+	ignoredPaths := append(h.IgnoredStaticPaths, "/")
+	safePath := path.Clean(req.URL.Path)
+	safeDir := filepath.Dir(safePath)
+
+	if !a.Public {
+		return false
+	}
+
+	for _, ignoredPath := range ignoredPaths {
+		if safeDir == ignoredPath || safePath == ignoredPath {
+			fmt.Printf("hit: safeDir:%s safePath:%s ignoredPath:%s\n", safeDir, safePath, ignoredPath)
+			return false
+		}
+		fmt.Printf("miss: safeDir:%s safePath:%s ignoredPath:%s\n", safeDir, safePath, ignoredPath)
+	}
+
+	return true
 }
 
 func (h *HTTPServer) status(w http.ResponseWriter, req *http.Request) {
