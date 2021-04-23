@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bmizerany/pat"
@@ -40,6 +39,8 @@ func (h *HTTPServer) Setup() {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
+	h.Debug = true
+
 	h.Pool.AppClosed = h.AppClosed
 
 	h.proxy = &httputil.ReverseProxy{
@@ -62,33 +63,21 @@ func (h *HTTPServer) AppClosed(app *App) {
 	h.transport.CloseIdleConnections()
 }
 
-func pruneSub(name string) string {
-	dot := strings.IndexByte(name, '.')
-	if dot == -1 {
-		return ""
-	}
-
-	return name[dot+1:]
-}
-
-func (h *HTTPServer) findApp(name string) (*App, error) {
+func (h *HTTPServer) findFirstApp(names []string) (*App, error) {
 	var (
 		app *App
 		err error
 	)
 
-	for name != "" {
+	for _, name := range names {
 		app, err = h.Pool.App(name)
 		if err != nil {
 			if err == ErrUnknownApp {
-				name = pruneSub(name)
 				continue
 			}
 
 			return nil, err
 		}
-
-		break
 	}
 
 	if app == nil {
@@ -106,41 +95,14 @@ func (h *HTTPServer) findApp(name string) (*App, error) {
 	return app, nil
 }
 
-func (h *HTTPServer) removeTLD(host string) string {
-	colon := strings.LastIndexByte(host, ':')
-	if colon != -1 {
-		if h, _, err := net.SplitHostPort(host); err == nil {
-			host = h
-		}
-	}
-
-	if strings.HasSuffix(host, ".xip.io") || strings.HasSuffix(host, ".nip.io") {
-		parts := strings.Split(host, ".")
-		if len(parts) < 6 {
-			return ""
-		}
-
-		name := strings.Join(parts[:len(parts)-6], ".")
-
-		return name
-	}
-
-	dot := strings.LastIndexByte(host, '.')
-
-	if dot == -1 {
-		return host
-	} else {
-		return host[:dot]
-	}
-}
-
 func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
-	name := h.removeTLD(req.Host)
+	pdReq := PumaDevRequest{req}
 
-	app, err := h.findApp(name)
+	app, err := h.findFirstApp(pdReq.AllAppNames())
+
 	if err != nil {
 		if err == ErrUnknownApp {
-			h.Events.Add("unknown_app", "name", name, "host", req.Host)
+			h.Events.Add("unknown_app", "name", pdReq.AppName(), "host", req.Host)
 		} else {
 			h.Events.Add("lookup_error", "error", err.Error())
 		}
@@ -166,13 +128,15 @@ func (h *HTTPServer) proxyReq(w http.ResponseWriter, req *http.Request) error {
 }
 
 func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	pdReq := PumaDevRequest{req}
+
 	if h.Debug {
 		fmt.Fprintf(os.Stderr, "%s: %s '%s' (host=%s)\n",
 			time.Now().Format(time.RFC3339Nano),
 			req.Method, req.URL.Path, req.Host)
 	}
 
-	if req.Host == "puma-dev" {
+	if pdReq.AppName() == "puma-dev" {
 		h.mux.ServeHTTP(w, req)
 	} else {
 		h.proxy.ServeHTTP(w, req)

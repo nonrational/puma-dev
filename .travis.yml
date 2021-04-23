@@ -7,6 +7,13 @@ go:
 os:
   - osx # mojave
 
+addons:
+  hosts:
+    - hipuma.puma.dev
+    - hipuma.test
+    - hipuma.localhost
+    - hipuma.puma
+    
 install:
   - go get -t ./...
 
