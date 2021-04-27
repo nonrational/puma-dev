@@ -89,7 +89,7 @@ func (a *App) Kill(reason string) error {
 		"reason", reason,
 	)
 
-	fmt.Printf("! Killing '%s' (%d)\n", a.Name, a.Command.Process.Pid)
+	fmt.Printf("! Killing '%s' (%d) - '%s'\n", a.Name, a.Command.Process.Pid, reason)
 	err := a.Command.Process.Signal(syscall.SIGTERM)
 	if err != nil {
 		a.eventAdd("killing_error",
@@ -97,7 +97,13 @@ func (a *App) Kill(reason string) error {
 			"error", err.Error(),
 		)
 		fmt.Printf("! Error trying to kill %s: %s", a.Name, err)
+	} else {
+		// sigterm successful -- now that this app is stopped, remove it
+		// from pool so it is guaranteed be booted on the next request
+		a.pool.remove(a)
+		a.eventAdd("shutdown")
 	}
+
 	return err
 }
 
@@ -164,8 +170,6 @@ func (a *App) idleMonitor() error {
 			return nil
 		}
 	}
-
-	return nil
 }
 
 func (a *App) restartMonitor() error {
@@ -236,23 +240,23 @@ func (a *App) Log() string {
 const executionShell = `exec bash -c '
 cd %s
 
-if test -e ~/.powconfig; then
+if test -e ~/.powconfig && [ "$PUMADEV_SOURCE_POWCONFIG" != "0" ]; then
 	source ~/.powconfig
 fi
 
-if test -e .env; then
+if test -e .env && [ "$PUMADEV_SOURCE_ENV" != "0" ]; then
 	source .env
 fi
 
-if test -e .powrc; then
+if test -e .powrc && [ "$PUMADEV_SOURCE_POWRC" != "0" ]; then
 	source .powrc
 fi
 
-if test -e .powenv; then
+if test -e .powenv && [ "$PUMADEV_SOURCE_POWENV" != "0" ]; then
 	source .powenv
 fi
 
-if test -e .pumaenv; then
+if test -e .pumaenv && [ "$PUMADEV_SOURCE_PUMAENV" != "0" ]; then
 	source .pumaenv
 fi
 

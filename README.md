@@ -1,7 +1,6 @@
 # Puma-dev: A fast, zero-config development server for macOS and Linux
 
-[![Build Status](https://travis-ci.org/puma/puma-dev.svg?branch=master)](https://travis-ci.org/puma/puma-dev)
-![CI](https://github.com/puma/puma-dev/workflows/CI/badge.svg)
+[![ci](https://github.com/puma/puma-dev/actions/workflows/ci.yml/badge.svg)](https://github.com/puma/puma-dev/actions/workflows/ci.yml)
 
 Puma-dev is the emotional successor to pow. It provides a quick and easy way to manage apps in development on macOS and Linux.
 
@@ -183,7 +182,15 @@ Puma-dev supports loading environment variables before puma starts. It checks fo
 * `.powenv`
 * `.pumaenv`
 
-Additionally, puma-dev uses a few environment variables to control how puma is started that you can overwrite in your loaded shell config.
+You can prevent puma-dev from loading any of these environment files by setting a corresponding environment variable to '0':
+
+* `PUMADEV_SOURCE_POWCONFIG=0`
+* `PUMADEV_SOURCE_ENV=0`
+* `PUMADEV_SOURCE_POWRC=0`
+* `PUMADEV_SOURCE_POWENV=0`
+* `PUMADEV_SOURCE_PUMAENV=0`
+
+Additionally, puma-dev uses a few other environment variables to control how puma is started that you can overwrite in your loaded shell config.
 
 * `CONFIG`: A puma configuration file to load, usually something like `config/puma-dev.rb`. Defaults to no config.
 * `THREADS`: How many threads puma should use concurrently. Defaults to 5.
@@ -307,6 +314,10 @@ The status includes:
   * If it is booting, running, or dead
   * The directory of the app
   * The last 1024 lines the app output
+
+### Events API
+
+Puma-dev emites a number of internal events and exposes them through an events API. These events can be helpful when troubleshooting configuration errors. To access it, send a request with the `Host: puma-dev` and the path `/events`, for example: `curl -H "Host: puma-dev" localhost/events`.
 
 ## Development
 
