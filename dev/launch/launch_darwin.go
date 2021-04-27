@@ -1,19 +1,54 @@
+// +build arm,darwin amd,darwin
+
 package launch
 
-/* Lovingly borrowed from https://github.com/sstephenson/launch_socket_server/blob/master/src/launch/socket.go */
-
 /*
+#include <errno.h>
+#include <launch.h>
 #include <stdlib.h>
-int launch_activate_socket(const char *name, int **fds, size_t *cnt);
+#include <string.h>
 */
 import "C"
-
 import (
 	"errors"
 	"net"
 	"os"
 	"unsafe"
 )
+
+var (
+	ErrNotExist         = errors.New("The socket name specified does not exist in the caller's launchd.plist")
+	ErrNotManaged       = errors.New("The calling process is not managed by launchd")
+	ErrAlreadyActivated = errors.New("The specified socket has already been activated")
+)
+
+func activateSocket(name string) ([]int, error) {
+	cName := C.CString(name)
+	defer C.free(unsafe.Pointer(cName))
+	var cFds *C.int
+	cCnt := C.size_t(0)
+	if ret := C.launch_activate_socket(cName, &cFds, &cCnt); ret != 0 {
+		switch ret {
+		case C.ENOENT:
+			return nil, ErrNotExist
+		case C.ESRCH:
+			return nil, ErrNotManaged
+		case C.EALREADY:
+			return nil, ErrAlreadyActivated
+		default:
+			return nil, errors.New(C.GoString(C.strerror(ret)))
+		}
+	}
+	ptr := unsafe.Pointer(cFds)
+	defer C.free(ptr)
+	cnt := int(cCnt)
+	fds := (*[1 << 30]C.int)(ptr)[:cnt:cnt]
+	res := make([]int, cnt)
+	for i := 0; i < cnt; i++ {
+		res[i] = int(fds[i])
+	}
+	return res, nil
+}
 
 func SocketFiles(name string) ([]*os.File, error) {
 	fds, err := activateSocket(name)
@@ -46,27 +81,4 @@ func SocketListeners(name string) ([]net.Listener, error) {
 	}
 
 	return listeners, nil
-}
-
-func activateSocket(name string) ([]int, error) {
-	c_name := C.CString(name)
-	var c_fds *C.int
-	c_cnt := C.size_t(0)
-
-	err := C.launch_activate_socket(c_name, &c_fds, &c_cnt)
-	if err != 0 {
-		return nil, errors.New("couldn't activate launchd socket " + name)
-	}
-
-	length := int(c_cnt)
-	pointer := unsafe.Pointer(c_fds)
-	fds := (*[1 << 30]C.int)(pointer)
-	result := make([]int, length)
-
-	for i := 0; i < length; i++ {
-		result[i] = int(fds[i])
-	}
-
-	C.free(pointer)
-	return result, nil
 }
