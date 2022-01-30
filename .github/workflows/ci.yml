@@ -35,3 +35,21 @@ jobs:
       - run: go mod download
 
       - run: go test -v -race -coverprofile=coverage.out -covermode=atomic -timeout=300s ./...
+
+  release:
+    runs-on: macos-latest
+    env:
+      - RELEASE: devel
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.17.2
+
+      - uses: actions/checkout@v2
+
+      - run: make release
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: pkg
