@@ -38,8 +38,10 @@ jobs:
 
   release:
     runs-on: macos-latest
+
     env:
-      - RELEASE: devel
+      RELEASE: devel
+
     steps:
       - uses: actions/setup-go@v1
         with:
