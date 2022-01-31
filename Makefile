@@ -10,7 +10,24 @@ install:
 lint:
 	golangci-lint run
 
+
 release:
+	rm -rf ./rel
+	mkdir -p ./rel
+
+	SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) gox -cgo -os="darwin" -arch="amd64 arm64" -ldflags "-X main.Version=$$RELEASE" ./cmd/puma-dev
+	gox -os="linux" -arch="amd64" -ldflags "-X main.Version=$$RELEASE" ./cmd/puma-dev
+
+	mkdir rel/linux_amd64
+	mv -v puma-dev_linux_amd64 rel/linux_amd64/puma-dev
+
+	mkdir rel/darwin_amd64
+	mv -v puma-dev_darwin_amd64 rel/darwin_amd64/puma-dev
+
+	mkdir rel/darwin_arm64
+	mv -v puma-dev_darwin_arm64 rel/darwin_arm64/puma-dev
+
+package:
 	rm -rf ./pkg
 	mkdir -p ./pkg
 
