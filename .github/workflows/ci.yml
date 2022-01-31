@@ -4,7 +4,7 @@ on: push
 
 env:
   GO_VERSION: 1.17.2
-  RUBY_VERSION: 3
+  RUBY_VERSION: 3.0.3
 
 jobs:
   test:
@@ -12,18 +12,16 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, macos-11.0, ubuntu-latest]
-        go-version: [${{ env.GO_VERSION }}]
-        ruby-version: [${{ env.RUBY_VERSION }}]
 
-    name: ${{ matrix.os }} / go-${{ matrix.go-version }}
+    name: ${{ matrix.os }} / go-${{ env.GO_VERSION }}
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: ${{ env.GO_VERSION }}
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ matrix.ruby-version }}
+          ruby-version: ${{ env.RUBY_VERSION }}
 
       - uses: actions/checkout@v2
 
