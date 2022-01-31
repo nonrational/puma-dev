@@ -57,15 +57,15 @@ jobs:
 
       - uses: actions/upload-artifact@v2
         with:
-          name: puma-dev-$RELEASE-linux-amd64
+          name: puma-dev-${{ env.RELEASE }}-linux-amd64
           path: rel/linux_amd64/puma-dev
 
       - uses: actions/upload-artifact@v2
         with:
-          name: puma-dev-$RELEASE-darwin-amd64
+          name: puma-dev-${{ env.RELEASE }}-darwin-amd64
           path: rel/darwin_amd64/puma-dev
 
       - uses: actions/upload-artifact@v2
         with:
-          name: puma-dev-$RELEASE-darwin-arm64
+          name: puma-dev-${{ env.RELEASE }}-darwin-arm64
           path: rel/darwin_arm64/puma-dev
