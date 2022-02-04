@@ -27,7 +27,7 @@ jobs:
         env:
           RELEASE: ${{ steps.get_version.outputs.RELEASE_VERSION }}
 
-      - run: sha256sum pkg/*
+      - run: openssl dgst -sha256 pkg/*
 
       - uses: ncipollo/release-action@v1
         with:
