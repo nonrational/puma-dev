@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/nxadm/tail"
 	"github.com/puma/puma-dev/homedir"
 	"github.com/vektra/errors"
 )
@@ -21,6 +23,8 @@ func command() error {
 		return link()
 	case "status":
 		return status()
+	case "log":
+		return tailLog()
 	default:
 		return fmt.Errorf("unknown command: %s", flag.Arg(0))
 	}
@@ -34,8 +38,17 @@ type App struct {
 }
 
 func status() error {
+	// by default, assume running on port 80
+	port := "80"
+	// but if the http port is given at the commandline, obey it
+	for _, arg := range os.Args {
+		if regexp.MustCompile(`-http-port`).Match([]byte(arg)) {
+			port = fmt.Sprintf("%d", *fHTTPPort)
+		}
+	}
+
 	client := &http.Client{}
-	url := fmt.Sprintf("http://localhost:%s/status", fmt.Sprintf("%d", *fHTTPPort))
+	url := fmt.Sprintf("http://localhost:%s/status", port)
 	req, err := http.NewRequest("GET", url, nil)
 	req.Host = "puma-dev"
 	w := tabwriter.NewWriter(os.Stdout, 20, 4, 1, ' ', 0)
@@ -141,6 +154,21 @@ func link() error {
 	}
 
 	fmt.Printf("+ App '%s' created, linked to '%s'\n", *name, dir)
+
+	return nil
+}
+
+func tailLog() error {
+	path := homedir.MustExpand(LogFilePath)
+
+	t, err := tail.TailFile(path, tail.Config{Poll: true, Follow: true})
+	if err != nil {
+		return err
+	}
+
+	for line := range t.Lines {
+		fmt.Println(line.Text)
+	}
 
 	return nil
 }

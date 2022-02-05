@@ -12,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/miekg/dns v1.1.29
+	github.com/nxadm/tail v1.4.8
 	github.com/stretchr/testify v1.5.1
 	github.com/vektra/errors v0.0.0-20140903201135-c64d83aba85a
 	golang.org/x/crypto v0.0.0-20200403201458-baeed622b8d8 // indirect
