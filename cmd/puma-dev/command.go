@@ -24,7 +24,7 @@ func command() error {
 	case "status":
 		return status()
 	case "log":
-		return tailLog()
+		return tailLog(flag.Arg(1) == "-f")
 	default:
 		return fmt.Errorf("unknown command: %s", flag.Arg(0))
 	}
@@ -158,10 +158,14 @@ func link() error {
 	return nil
 }
 
-func tailLog() error {
-	path := homedir.MustExpand(LogFilePath)
+func tailLog(follow bool) error {
+	path, err := filepath.EvalSymlinks(homedir.MustExpand(LogFilePath))
+	if err != nil {
+		return err
+	}
 
-	t, err := tail.TailFile(path, tail.Config{Poll: true, Follow: true})
+	// inotify seems to cause panics resolving symlinks, so use polling
+	t, err := tail.TailFile(path, tail.Config{Poll: true, Follow: follow, ReOpen: follow})
 	if err != nil {
 		return err
 	}
