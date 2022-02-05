@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"text/tabwriter"
 
@@ -38,14 +37,15 @@ type App struct {
 }
 
 func status() error {
-	// by default, assume running on port 80
+	// by default, assume running on http port 80
 	port := "80"
+
 	// but if the http port is given at the commandline, obey it
-	for _, arg := range os.Args {
-		if regexp.MustCompile(`-http-port`).Match([]byte(arg)) {
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "http-port" {
 			port = fmt.Sprintf("%d", *fHTTPPort)
 		}
-	}
+	})
 
 	client := &http.Client{}
 	url := fmt.Sprintf("http://localhost:%s/status", port)
