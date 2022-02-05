@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/tabwriter"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/vektra/errors"
 )
 
+var followFlag = regexp.MustCompile(`-[Ff]`)
+
 func command() error {
 	switch flag.Arg(0) {
 	case "link":
@@ -23,7 +26,8 @@ func command() error {
 	case "status":
 		return status()
 	case "log":
-		return tailLog(flag.Arg(1) == "-f")
+		follow := followFlag.Match([]byte(flag.Arg(1)))
+		return tailLog(follow)
 	default:
 		return fmt.Errorf("unknown command: %s", flag.Arg(0))
 	}
@@ -159,6 +163,10 @@ func link() error {
 }
 
 func tailLog(follow bool) error {
+	if LogFilePath == "" {
+		return fmt.Errorf("unsupported platform")
+	}
+
 	path, err := filepath.EvalSymlinks(homedir.MustExpand(LogFilePath))
 	if err != nil {
 		return err
