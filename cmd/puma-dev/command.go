@@ -34,14 +34,8 @@ type App struct {
 }
 
 func status() error {
-	var port string
-
-	if *fHTTPPort != 9280 {
-		port = fmt.Sprintf(":%d", *fHTTPPort)
-	}
-
 	client := &http.Client{}
-	url := fmt.Sprintf("http://localhost%s/status", port)
+	url := fmt.Sprintf("http://localhost:%s/status", fmt.Sprintf("%d", *fHTTPPort))
 	req, err := http.NewRequest("GET", url, nil)
 	req.Host = "puma-dev"
 	w := tabwriter.NewWriter(os.Stdout, 20, 4, 1, ' ', 0)
@@ -53,8 +47,7 @@ func status() error {
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Printf("Unable to lookup puma-dev status. Is puma-dev listening on port %d?\n", *fHTTPPort)
-		return nil
+		return fmt.Errorf("unable to lookup puma-dev status. %s", err.Error())
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
@@ -71,7 +64,6 @@ func status() error {
 	}
 
 	if len(apps) > 0 {
-
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "NAME", "STATUS", "ADDRESS", "SCHEME")
 
 		for name, app := range apps {

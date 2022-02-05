@@ -99,5 +99,8 @@ func TestCommand_link_reassignExistingApp(t *testing.T) {
 }
 
 func TestCommand_status(t *testing.T) {
-	assert.Nil(t, status())
+	StubCommandLineArgs("status")
+	if err := command(); err != nil {
+		assert.Regexp(t, "unable to lookup puma-dev status", err.Error())
+	}
 }
