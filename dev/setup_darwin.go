@@ -122,11 +122,17 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
 	}
 
 	fmt.Printf("* Use '%s' as the location of puma-dev\n", binPath)
-
+	// https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
 	var userTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+   <key>com.apple.security.app-sandbox</key>
+   <true/>
+   <key>com.apple.security.files.user-selected.read-only</key>
+   <true/>
+   <key>com.apple.security.network.server</key>
+   <true/>
    <key>Label</key>
    <string>io.puma.dev</string>
    <key>ProgramArguments</key>
@@ -148,6 +154,7 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
    <true/>
    <key>Sockets</key>
    <dict>
+       <!-- HTTP -->
        <key>Socket</key>
        <dict>
            <key>SockNodeName</key>
@@ -155,7 +162,16 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
            <key>SockServiceName</key>
            <string>%d</string>
        </dict>
+       <!-- HTTPS -->
        <key>SocketTLS</key>
+       <dict>
+           <key>SockNodeName</key>
+           <string>0.0.0.0</string>
+           <key>SockServiceName</key>
+           <string>%d</string>
+       </dict>
+       <!-- DNS -->
+       <key>SocketDNS</key>
        <dict>
            <key>SockNodeName</key>
            <string>0.0.0.0</string>
@@ -184,7 +200,7 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
 
 	err = ioutil.WriteFile(
 		plist,
-		[]byte(fmt.Sprintf(userTemplate, binPath, dir, config.Domains, config.Timeout, config.NoServePublicPaths, config.ListenPort, config.TlsPort, logPath, logPath)),
+		[]byte(fmt.Sprintf(userTemplate, binPath, dir, config.Domains, config.Timeout, config.NoServePublicPaths, config.ListenPort, config.TlsPort, 9253, logPath, logPath)),
 		0644,
 	)
 
@@ -200,7 +216,7 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
 		return errors.Context(err, "loading plist into launchctl")
 	}
 
-	fmt.Printf("* Installed puma-dev on ports: http %d, https %d\n", config.ListenPort, config.TlsPort)
+	fmt.Printf("* Installed puma-dev on ports: http %d, https %d, dns %d\n", config.ListenPort, config.TlsPort, 9253)
 
 	return nil
 }
