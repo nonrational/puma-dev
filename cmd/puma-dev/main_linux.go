@@ -27,6 +27,8 @@ var (
 	fTLSPort            = flag.Int("https-port", 9283, "port to listen on https for")
 )
 
+const LogFilePath = ""
+
 func main() {
 	flag.Parse()
 

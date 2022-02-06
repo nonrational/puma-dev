@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -218,6 +219,18 @@ func runPlatformAgnosticTestScenarios(t *testing.T) {
 		assert.Equal(t, "{}", getURLWithHost(t, reqURL, statusHost))
 	})
 
+	t.Run("status command should report no running apps", func(t *testing.T) {
+		StubCommandLineArgs("status")
+
+		statusLog := WithStdoutCaptured(func() {
+			if err := command(); err != nil {
+				assert.Fail(t, err.Error())
+			}
+		})
+
+		assert.Equal(t, "No apps are currently running.\n", statusLog)
+	})
+
 	t.Run("hipuma rack response", func(t *testing.T) {
 		reqURL := fmt.Sprintf("http://localhost:%d/", *fHTTPPort)
 		reqHost := "hipuma"
@@ -334,5 +347,19 @@ func runPlatformAgnosticTestScenarios(t *testing.T) {
 
 		assert.Regexp(t, `^127\.0\.0\.1|::1`, dumpedHeaders["HTTP_X_FORWARDED_FOR"])
 		assert.Equal(t, "https", dumpedHeaders["HTTP_X_FORWARDED_PROTO"])
+	})
+
+	t.Run("status command should report some running apps", func(t *testing.T) {
+		StubCommandLineArgs("status")
+
+		statusLog := WithStdoutCaptured(func() {
+			if err := command(); err != nil {
+				assert.Fail(t, err.Error())
+			}
+		})
+
+		assert.Regexp(t, "NAME", statusLog)
+		assert.Regexp(t, regexp.MustCompile(`static-hi-puma-[a-f0-9]{8}\s+running`), statusLog)
+		assert.Regexp(t, regexp.MustCompile(`rack-request-headers-dump-[a-f0-9]{8}\s+running`), statusLog)
 	})
 }

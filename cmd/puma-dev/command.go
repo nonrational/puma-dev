@@ -1,23 +1,98 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"text/tabwriter"
 
+	"github.com/nxadm/tail"
 	"github.com/puma/puma-dev/homedir"
 	"github.com/vektra/errors"
 )
+
+var followFlag = regexp.MustCompile(`-[Ff]`)
 
 func command() error {
 	switch flag.Arg(0) {
 	case "link":
 		return link()
+	case "status":
+		return status()
+	case "log":
+		follow := followFlag.Match([]byte(flag.Arg(1)))
+		return tailLog(follow)
 	default:
 		return fmt.Errorf("unknown command: %s", flag.Arg(0))
 	}
+}
+
+// App is a running application.
+type App struct {
+	Status  string `json:"status"`
+	Scheme  string `json:"scheme"`
+	Address string `json:"address"`
+}
+
+func status() error {
+	// by default, assume running on http port 80
+	port := "80"
+
+	// but if the http port is given at the commandline, obey it
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "http-port" {
+			port = fmt.Sprintf("%d", *fHTTPPort)
+		}
+	})
+
+	client := &http.Client{}
+	url := fmt.Sprintf("http://localhost:%s/status", port)
+	req, err := http.NewRequest("GET", url, nil)
+	req.Host = "puma-dev"
+	w := tabwriter.NewWriter(os.Stdout, 20, 4, 1, ' ', 0)
+
+	if err != nil {
+		return err
+	}
+
+	res, err := client.Do(req)
+
+	if err != nil {
+		return fmt.Errorf("unable to lookup puma-dev status. %s", err.Error())
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		return err
+	}
+
+	var apps map[string]*App
+	err = json.Unmarshal(body, &apps)
+
+	if err != nil {
+		return err
+	}
+
+	if len(apps) > 0 {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", "NAME", "STATUS", "ADDRESS", "SCHEME")
+
+		for name, app := range apps {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", name, app.Status, app.Address, app.Scheme)
+		}
+
+		w.Flush()
+	} else {
+		fmt.Println("No apps are currently running.")
+	}
+
+	return nil
 }
 
 func link() error {
@@ -83,6 +158,29 @@ func link() error {
 	}
 
 	fmt.Printf("+ App '%s' created, linked to '%s'\n", *name, dir)
+
+	return nil
+}
+
+func tailLog(follow bool) error {
+	if LogFilePath == "" {
+		return fmt.Errorf("unsupported platform")
+	}
+
+	path, err := filepath.EvalSymlinks(homedir.MustExpand(LogFilePath))
+	if err != nil {
+		return err
+	}
+
+	// inotify seems to cause panics resolving symlinks, so use polling
+	t, err := tail.TailFile(path, tail.Config{Poll: true, Follow: follow, ReOpen: follow})
+	if err != nil {
+		return err
+	}
+
+	for line := range t.Lines {
+		fmt.Println(line.Text)
+	}
 
 	return nil
 }
