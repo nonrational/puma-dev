@@ -73,6 +73,6 @@ devel-setup-install: build
 	./puma-dev -d 'test:puma:puma.dev:localhost' -install
 
 devel-uninstall: build
-	./puma-dev -uninstall -d 'test:puma:puma.dev:localhost:loc.al'
+	./puma-dev -uninstall -d 'test:puma:puma.dev:localhost'
 
 .PHONY: release
