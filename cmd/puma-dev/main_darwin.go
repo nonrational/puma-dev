@@ -167,9 +167,21 @@ func main() {
 		fmt.Printf("* HTTPS Server port: %d\n", *fTLSPort)
 	}
 
+	var (
+		socketName    string
+		tlsSocketName string
+		dnsSocketName string
+	)
+
+	if *fLaunch {
+		socketName = "Socket"
+		tlsSocketName = "SocketTLS"
+		dnsSocketName = "SocketDNS"
+	}
+
 	dns := dev.NewDNSResponder(fmt.Sprintf("127.0.0.1:%d", *fDNSPort), domains)
 	go func() {
-		if err := dns.Serve(); err != nil {
+		if err := dns.Serve("", dnsSocketName); err != nil {
 			fmt.Printf("! DNS Server failed: %v\n", err)
 		}
 	}()
@@ -188,16 +200,6 @@ func main() {
 	}
 
 	http.Setup()
-
-	var (
-		socketName    string
-		tlsSocketName string
-	)
-
-	if *fLaunch {
-		socketName = "Socket"
-		tlsSocketName = "SocketTLS"
-	}
 
 	fmt.Printf("! Puma dev running...\n")
 

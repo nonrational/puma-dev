@@ -162,6 +162,13 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
            <key>SockServiceName</key>
            <string>%d</string>
        </dict>
+			 <key>SocketDNS</key>
+       <dict>
+           <key>SockNodeName</key>
+           <string>0.0.0.0</string>
+           <key>SockServiceName</key>
+           <string>9253</string>
+       </dict>
    </dict>
    <key>StandardOutPath</key>
    <string>%s</string>
@@ -191,6 +198,8 @@ func InstallIntoSystem(config *InstallIntoSystemArgs) error {
 	if err != nil {
 		return errors.Context(err, "writing LaunchAgent plist")
 	}
+
+	fmt.Println(plist)
 
 	// Unload a previous one if need be.
 	// nolint:errcheck

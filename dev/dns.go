@@ -1,10 +1,12 @@
 package dev
 
 import (
+	"fmt"
 	"net"
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/puma/puma-dev/dev/launch"
 	"gopkg.in/tomb.v2"
 )
 
@@ -36,14 +38,21 @@ func (d *DNSResponder) handleDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 	m := new(dns.Msg)
 	m.SetReply(r)
+
 	if ip, ok := w.RemoteAddr().(*net.UDPAddr); ok {
 		a = ip.IP
 		v4 = a.To4() != nil
 	}
+
 	if ip, ok := w.RemoteAddr().(*net.TCPAddr); ok {
 		a = ip.IP
 		v4 = a.To4() != nil
 	}
+
+	// try to forward req to 1.1.1.1 if we couldn't resolve it ourselves
+	packed, err := m.Pack()
+	resolver := net.UDPAddr{IP: net.IP{1, 1, 1, 1}, Port: 53}
+	_, err = conn.WriteToUDP(packed, &resolver)
 
 	if v4 {
 		rr = new(dns.A)
@@ -69,19 +78,37 @@ func (d *DNSResponder) handleDNS(w dns.ResponseWriter, r *dns.Msg) {
 	w.WriteMsg(m)
 }
 
-func (d *DNSResponder) Serve() error {
+func (d *DNSResponder) Serve(tcpSocket string, udpSocket string) error {
 	for _, domain := range d.Domains {
 		dns.HandleFunc(domain+".", d.handleDNS)
 	}
 
 	var t tomb.Tomb
 
-	t.Go(func() error {
-		return d.udpServer.ListenAndServe()
-	})
+	if tcpSocket != "" {
+		fmt.Printf("Attempting to bind to socket %s\n", tcpSocket)
+		tcpListeners, err := launch.SocketListeners(tcpSocket)
+		if err != nil {
+			return err
+		}
+		d.tcpServer.Listener = tcpListeners[0]
+	}
 
 	t.Go(func() error {
 		return d.tcpServer.ListenAndServe()
+	})
+
+	if udpSocket != "" {
+		fmt.Printf("Attempting to bind to socket %s", udpSocket)
+		udpListeners, err := launch.SocketListeners(udpSocket)
+		if err != nil {
+			return err
+		}
+		d.udpServer.Listener = udpListeners[0]
+	}
+
+	t.Go(func() error {
+		return d.udpServer.ListenAndServe()
 	})
 
 	return t.Wait()

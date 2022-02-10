@@ -10,7 +10,6 @@ install:
 lint:
 	golangci-lint run
 
-
 release:
 	rm -rf ./rel
 	mkdir ./rel
@@ -68,5 +67,12 @@ test-macos-manual-setup-install: clean build
 	launchctl list io.puma.dev > /dev/null
 	test -f "$$HOME/Library/Logs/puma-dev.log"
 	test 'Hi Puma!' == "$$(curl -s https://rack-hi-puma.puma)" && echo "PASS"
+
+devel-setup-install: build
+	sudo ./puma-dev -d 'test:puma:puma.dev:localhost' -setup
+	./puma-dev -d 'test:puma:puma.dev:localhost' -install
+
+devel-uninstall: build
+	./puma-dev -uninstall -d 'test:puma:puma.dev:localhost'
 
 .PHONY: release
