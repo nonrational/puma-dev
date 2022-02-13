@@ -1,0 +1,13 @@
+{
+    "source" : ["./rel/darwin_amd64/puma-dev"],
+    "bundle_id" : "dev.puma.puma-dev",
+    "apple_id": {
+        "password":  "@env:AC_PASSWORD"
+    },
+    "sign" :{
+        "application_identity" : "XXXXX"
+    },
+    "zip" :{
+        "output_path" : "pkg/puma-dev-darwin-amd64.tar.gz"
+    }
+}

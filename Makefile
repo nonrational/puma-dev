@@ -1,3 +1,5 @@
+.PHONY: build clean install lint release-clean release-build release-package-darwin release-package-linux release test clean-test test-macos-interactive test-macos-filesystem-setup coverage test-macos-interactive test-macos-manual-setup-install devel-uninstall devel-setup-install
+
 build:
 	go build ./cmd/puma-dev
 
@@ -10,11 +12,12 @@ install:
 lint:
 	golangci-lint run
 
-release:
+release-clean:
 	rm -rf ./rel
-	mkdir ./rel
-
 	rm -rf ./pkg
+
+release-build:
+	mkdir ./rel
 	mkdir ./pkg
 
 	SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) gox -cgo -os="darwin" -arch="amd64 arm64" -ldflags "-X main.Version=$$RELEASE" ./cmd/puma-dev
@@ -22,15 +25,25 @@ release:
 
 	mkdir rel/linux_amd64
 	mv -v puma-dev_linux_amd64 rel/linux_amd64/puma-dev
-	tar -C rel/linux_amd64 -cvzf "pkg/puma-dev-$$RELEASE-linux-amd64.tar.gz" puma-dev
 
 	mkdir rel/darwin_amd64
 	mv -v puma-dev_darwin_amd64 rel/darwin_amd64/puma-dev
-	zip -j -v "pkg/puma-dev-$$RELEASE-darwin-amd64.zip" rel/darwin_amd64/puma-dev
 
 	mkdir rel/darwin_arm64
 	mv -v puma-dev_darwin_arm64 rel/darwin_arm64/puma-dev
-	zip -j -v "pkg/puma-dev-$$RELEASE-darwin-arm64.zip" rel/darwin_arm64/puma-dev
+
+release-package-darwin:
+	gon -log-level=debug -log-json ./gon_amd64.json
+	mv pkg/puma-dev-darwin-amd64.tar.gz "pkg/puma-dev-$$RELEASE-darwin-amd64.zip"
+
+	gon -log-level=debug -log-json ./gon_arm64.json
+	mv pkg/puma-dev-darwin-arm64.tar.gz "pkg/puma-dev-$$RELEASE-darwin-arm64.zip"
+
+release-package-linux:
+	tar -C rel/linux_amd64 -cvzf "pkg/puma-dev-$$RELEASE-linux-amd64.tar.gz" puma-dev
+
+release: release-clean release-build release-package-darwin release-package-linux
+	openssl dgst -sha256 pkg/*
 
 test: clean-test
 	go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
@@ -74,5 +87,3 @@ devel-setup-install: build
 
 devel-uninstall: build
 	./puma-dev -uninstall -d 'test:puma:puma.dev:localhost'
-
-.PHONY: release

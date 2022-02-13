@@ -17,6 +17,11 @@ jobs:
       - run: go install github.com/mitchellh/gox@v1.0.2-0.20210311182516-8c3b2b9e647d
       - run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
 
+      - name: brew install gon for macOS binary notarization
+      - run: |
+          brew tap mitchellh/gon
+          brew install mitchellh/gon/gon
+
       - name: get release version
         id: get_version
         run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF#refs/tags/v}
@@ -26,8 +31,6 @@ jobs:
       - run: make release
         env:
           RELEASE: ${{ steps.get_version.outputs.RELEASE_VERSION }}
-
-      - run: openssl dgst -sha256 pkg/*
 
       - uses: ncipollo/release-action@v1
         with:
