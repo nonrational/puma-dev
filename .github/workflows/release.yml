@@ -20,7 +20,7 @@ jobs:
       - run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
 
       - name: brew install gon for macOS binary notarization
-      - run: |
+        run: |
           brew tap mitchellh/gon
           brew install mitchellh/gon/gon
 
