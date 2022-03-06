@@ -5,9 +5,9 @@
         "password":  "@env:AC_PASSWORD"
     },
     "sign" :{
-        "application_identity" : "XXXXX"
+        "application_identity" : "4109FE37B3316E057848BAD83F15BBF104D943A8"
     },
     "zip" :{
-        "output_path" : "pkg/puma-dev-darwin-amd64.tar.gz"
+        "output_path" : "rel/puma-dev-darwin-amd64.zip"
     }
 }

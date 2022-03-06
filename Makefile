@@ -34,10 +34,10 @@ release-build:
 
 release-package-darwin:
 	gon -log-level=debug -log-json ./gon_amd64.json
-	mv pkg/puma-dev-darwin-amd64.tar.gz "pkg/puma-dev-$$RELEASE-darwin-amd64.zip"
+	mv rel/puma-dev-darwin-amd64.zip "pkg/puma-dev-$$RELEASE-darwin-amd64.zip"
 
 	gon -log-level=debug -log-json ./gon_arm64.json
-	mv pkg/puma-dev-darwin-arm64.tar.gz "pkg/puma-dev-$$RELEASE-darwin-arm64.zip"
+	mv rel/puma-dev-darwin-arm64.zip "pkg/puma-dev-$$RELEASE-darwin-arm64.zip"
 
 release-package-linux:
 	tar -C rel/linux_amd64 -cvzf "pkg/puma-dev-$$RELEASE-linux-amd64.tar.gz" puma-dev
