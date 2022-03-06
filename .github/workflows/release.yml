@@ -9,6 +9,7 @@ on:
       ac_password:
         description: 'Apple Developer ID Password'
         required: true
+
 jobs:
   release:
     runs-on: macos-latest
@@ -37,12 +38,13 @@ jobs:
       - run: make release
         env:
           RELEASE: ${{ github.event.inputs.version }}
+          AC_USERNAME: ${{ github.event.inputs.ac_username }}
 
-      - uses: ncipollo/release-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "pkg/*"
-          allowUpdates: true
-          omitBody: true
-          prerelease: true
-          removeArtifacts: true
+      # - uses: ncipollo/release-action@v1
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     artifacts: "pkg/*"
+      #     allowUpdates: true
+      #     omitBody: true
+      #     prerelease: true
+      #     removeArtifacts: true
