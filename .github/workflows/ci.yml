@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        go-version: [1.17.6, 1.20.1, latest]
+        go-version: [1.17.6, 1.20.1, stable]
         shell: [/bin/bash, /bin/zsh]
 
     name: ${{ matrix.os }} / go-${{ matrix.go-version }} / ${{ matrix.shell }}
