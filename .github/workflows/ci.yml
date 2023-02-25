@@ -8,16 +8,13 @@ on: push
   # # build PRs from forks
   # pull_request:
 
-env:
-  GO_VERSION: 1.20.1
-
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        go-version: [${{ env.GO_VERSION }}]
+        go-version: [1.20.1]
         shell: [/bin/bash, /bin/zsh]
 
     name: ${{ matrix.os }} / go-${{ matrix.go-version }} / ${{ matrix.shell }}
@@ -57,7 +54,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: 1.20.1
 
       - name: Get short SHA
         id: version
