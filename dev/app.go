@@ -6,7 +6,6 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -49,9 +48,8 @@ type App struct {
 	pool    *AppPool
 	lastUse time.Time
 
-	lock sync.Mutex
-
-	booting bool
+	// lock sync.Mutex
+	// booting bool
 
 	readyChan chan struct{}
 }
@@ -133,7 +131,7 @@ func (a *App) watch() error {
 	reason := "detected interval shutdown"
 
 	select {
-	case err = <-c:
+	case <-c:
 		reason = "stdout/stderr closed"
 		err = fmt.Errorf("%s:\n\t%s", ErrUnexpectedExit, a.lastLogLine)
 	case <-a.t.Dying():
@@ -364,7 +362,7 @@ func (pool *AppPool) LaunchApp(name, dir string) (*App, error) {
 }
 
 func (pool *AppPool) readProxy(name, path string) (*App, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
