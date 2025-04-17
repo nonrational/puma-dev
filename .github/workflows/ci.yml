@@ -58,25 +58,25 @@ jobs:
 
       - name: Get short SHA
         id: version
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c-8)"
+        run: echo VERSION_SHA8=$(echo ${GITHUB_SHA} | cut -c-8) >> $GITHUB_OUTPUT
 
       - uses: actions/checkout@v4
 
       - run: make release
         env:
-          RELEASE: ${{ steps.version.outputs.sha8 }}
+          RELEASE: ${{ steps.version.outputs.VERSION_SHA8 }}
 
       - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-linux-amd64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-linux-amd64
           path: rel/linux_amd64/puma-dev
 
       - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-darwin-amd64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-darwin-amd64
           path: rel/darwin_amd64/puma-dev
 
       - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-darwin-arm64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-darwin-arm64
           path: rel/darwin_arm64/puma-dev
