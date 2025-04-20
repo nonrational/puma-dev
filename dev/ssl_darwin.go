@@ -1,9 +1,5 @@
 package dev
 
-/**
- * This file contains functions to manage the macOS keychain for puma-dev using the `security` command-line tool.
- */
-
 import (
 	"bytes"
 	"fmt"
