@@ -24,7 +24,7 @@ import (
 
 var CACert *tls.Certificate
 
-func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error {
+func GeneratePumaDevCertificateAuthority(certPath string, keyPath string, domains []string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return errors.Context(err, "generating new RSA key")
@@ -43,18 +43,19 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			Organization: []string{"Developer Certificate"},
-			CommonName:   "Puma-dev CA",
+			CommonName:   fmt.Sprintf("Puma-dev CA (%v)", serialNumber),
 		},
-		NotBefore:             notBefore,
-		NotAfter:              notAfter,
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		IsCA:                  true,
+		NotBefore:                   notBefore,
+		NotAfter:                    notAfter,
+		KeyUsage:                    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid:       true,
+		IsCA:                        true,
+		PermittedDNSDomainsCritical: true,
+		PermittedDNSDomains:         domains,
 	}
 
-	derBytes, err := x509.CreateCertificate(
-		rand.Reader, cert, cert, priv.Public(), priv)
+	derBytes, err := x509.CreateCertificate(rand.Reader, cert, cert, priv.Public(), priv)
 
 	if err != nil {
 		return errors.Context(err, "creating CA cert")
@@ -86,7 +87,51 @@ func GeneratePumaDevCertificateAuthority(certPath string, keyPath string) error 
 	return nil
 }
 
-func SetupOurCert() error {
+func EnsurePermittedDNSDomains(cert *tls.Certificate, domains []string) error {
+	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		return fmt.Errorf("failed to parse certificate: %v", err)
+	}
+
+	// Create a map of existing permitted domains for quick lookup
+	existingDomains := make(map[string]struct{}, len(x509Cert.PermittedDNSDomains))
+	for _, domain := range x509Cert.PermittedDNSDomains {
+		existingDomains[domain] = struct{}{}
+	}
+
+	// Check if all topLevelDomains are already in the certificate
+	missingDomains := []string{}
+	for _, domain := range domains {
+		if _, found := existingDomains[domain]; !found {
+			missingDomains = append(missingDomains, domain)
+		}
+	}
+
+	// log.Println("Existing domains: ", x509Cert.PermittedDNSDomains)
+	// log.Println("Missing domains:", missingDomains)
+
+	// If no domains are missing, return early
+	if len(missingDomains) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("CA does not support domains %v", missingDomains)
+}
+
+// SetupOurCert sets up a certificate authority (CA) for the given DNS domains.
+// It ensures that the necessary directory structure exists, checks for an existing
+// key and certificate pair, validates the domains against the existing certificate,
+// and generates a new CA if needed. If a new CA is generated, it also attempts to
+// trust the certificate on the system.
+//
+// Parameters:
+//   - dnsDomains: A slice of strings representing the DNS domains for which the
+//     certificate authority should be set up.
+//
+// Returns:
+//   - An error if any step in the process fails, such as directory creation, loading
+//     the key pair, domain validation, certificate generation, or trusting the certificate.
+func SetupOurCert(dnsDomains []string) error {
 	dir := homedir.MustExpand(SupportDir)
 
 	err := os.MkdirAll(dir, 0700)
@@ -99,12 +144,17 @@ func SetupOurCert() error {
 
 	tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath)
 	if err == nil {
-		log.Println("Existing valid puma-dev CA keypair found. Assuming previously trusted.")
+		if domainErr := EnsurePermittedDNSDomains(&tlsCert, dnsDomains); domainErr != nil {
+			log.Fatal("Existing puma-dev CA is invalid. Please `-uninstall` and try again: ", domainErr)
+			return domainErr
+		}
+
+		log.Printf("Existing puma-dev CA keypair found for domain(s) %v. Assuming trusted.", dnsDomains)
 		CACert = &tlsCert
 		return nil
 	}
 
-	if certGenErr := GeneratePumaDevCertificateAuthority(certPath, keyPath); certGenErr != nil {
+	if certGenErr := GeneratePumaDevCertificateAuthority(certPath, keyPath, dnsDomains); certGenErr != nil {
 		return certGenErr
 	}
 
@@ -151,11 +201,8 @@ func (c *certCache) GetCertificate(clientHello *tls.ClientHelloInfo) (*tls.Certi
 	return cert, nil
 }
 
-func makeCert(
-	parent *tls.Certificate,
-	name string,
-) (*tls.Certificate, error) {
-
+// Generate a specific certificate for a given application domain name, e.g., "foo.test"
+func makeCert(parent *tls.Certificate, name string) (*tls.Certificate, error) {
 	// start by generating private key
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -177,10 +224,12 @@ func makeCert(
 			Organization: []string{"Puma-dev Signed"},
 			CommonName:   name,
 		},
-		NotBefore:   notBefore,
-		NotAfter:    notAfter,
-		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		NotBefore:                   notBefore,
+		NotAfter:                    notAfter,
+		KeyUsage:                    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		PermittedDNSDomainsCritical: true,
+		PermittedDNSDomains:         []string{name},
 	}
 
 	cert.DNSNames = append(cert.DNSNames, name)

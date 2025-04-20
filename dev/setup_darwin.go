@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/kardianos/osext"
 	"github.com/puma/puma-dev/homedir"
@@ -106,12 +108,23 @@ type InstallIntoSystemArgs struct {
 	NoServePublicPaths string
 }
 
+type ByDecreasingTLDComplexity []string
+
+func (a ByDecreasingTLDComplexity) Len() int      { return len(a) }
+func (a ByDecreasingTLDComplexity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByDecreasingTLDComplexity) Less(i, j int) bool {
+	return strings.Count(a[i], ".") > strings.Count(a[j], ".")
+}
+
 func InstallIntoSystem(config *InstallIntoSystemArgs) error {
 	if sudo := os.Getenv("SUDO_USER"); sudo != "" {
 		return fmt.Errorf("cannot run as superuser")
 	}
 
-	err := SetupOurCert()
+	domains := strings.Split(config.Domains, ":")
+	sort.Sort(ByDecreasingTLDComplexity(domains))
+
+	err := SetupOurCert(domains)
 	if err != nil {
 		return err
 	}

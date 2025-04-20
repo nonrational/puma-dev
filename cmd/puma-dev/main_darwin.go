@@ -150,7 +150,10 @@ func main() {
 		log.Fatalf("Unable to configure OS X resolver: %s", err)
 	}
 
-	err = dev.SetupOurCert()
+	// SetupOurCert needs to know what domains we'll be serving to generate a CA
+	// that can only sign subdomains. This is a security feature to prevent a stolen
+	// CA from being used to sign non-puma-dev domains.
+	err = dev.SetupOurCert(domains)
 	if err != nil {
 		log.Fatalf("Unable to setup TLS cert: %s", err)
 	}
