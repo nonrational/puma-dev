@@ -86,7 +86,8 @@ func TestCertificateInstallAndTrustHTTPS_DarwinInteractive(t *testing.T) {
 	assert.NoFileExists(t, liveKeyPath)
 
 	certInstallStdOut := WithStdoutCaptured(func() {
-		err := dev.SetupOurCert([]string{"puma", "test"})
+		// These are the domains that we'll be using for our test
+		err := dev.SetupOurCert([]string{"puma", "test", "localhost", "puma.dev"})
 		assert.Nil(t, err)
 
 		assert.FileExists(t, liveCertPath)

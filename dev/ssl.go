@@ -231,12 +231,10 @@ func makeCert(parent *tls.Certificate, name string) (*tls.Certificate, error) {
 			Organization: []string{"Puma-dev Signed"},
 			CommonName:   name,
 		},
-		NotBefore:                   notBefore,
-		NotAfter:                    notAfter,
-		KeyUsage:                    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		PermittedDNSDomainsCritical: true,
-		PermittedDNSDomains:         []string{name},
+		NotBefore:   notBefore,
+		NotAfter:    notAfter,
+		KeyUsage:    x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
 
 	cert.DNSNames = append(cert.DNSNames, name)
