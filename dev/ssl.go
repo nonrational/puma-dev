@@ -93,6 +93,13 @@ func EnsurePermittedDNSDomains(cert *tls.Certificate, domains []string) error {
 		return fmt.Errorf("failed to parse certificate: %v", err)
 	}
 
+	if !x509Cert.PermittedDNSDomainsCritical {
+		// If this certificate was generated prior to introducing PermittedDNSDomains support,
+		// inform the user that they should reinstall to take advantage of the new feature.
+		log.Println("Your puma-dev CA is outdated and can sign arbitrary domains.\nFor your security, use `-uninstall` to remove it and `-install` to generate and trust a new CA.")
+		return nil
+	}
+
 	// Create a map of existing permitted domains for quick lookup
 	existingDomains := make(map[string]struct{}, len(x509Cert.PermittedDNSDomains))
 	for _, domain := range x509Cert.PermittedDNSDomains {
