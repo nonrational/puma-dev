@@ -51,6 +51,8 @@ jobs:
     needs: test
 
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: 1.24.2
@@ -58,8 +60,6 @@ jobs:
       - name: Get short SHA
         id: version
         run: echo VERSION_SHA8=$(echo ${GITHUB_SHA} | cut -c-8) >> $GITHUB_OUTPUT
-
-      - uses: actions/checkout@v4
 
       - run: make release
         env:
