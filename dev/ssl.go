@@ -96,7 +96,7 @@ func EnsurePermittedDNSDomains(cert *tls.Certificate, domains []string) error {
 	if !x509Cert.PermittedDNSDomainsCritical {
 		// If this certificate was generated prior to introducing PermittedDNSDomains support,
 		// inform the user that they should reinstall to take advantage of the new feature.
-		log.Println("Your puma-dev CA is outdated and can sign arbitrary domains.\nFor your security, use `-uninstall` to remove it and `-install` to generate and trust a new CA.")
+		log.Println("! Your puma-dev CA is outdated and can sign arbitrary domains.\n  For your security, run `-install` to generate a new CA.")
 		return nil
 	}
 
@@ -149,17 +149,19 @@ func SetupOurCert(dnsDomains []string) error {
 	keyPath := filepath.Join(dir, "key.pem")
 	certPath := filepath.Join(dir, "cert.pem")
 
-	tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath)
-	if err == nil {
-		if domainErr := EnsurePermittedDNSDomains(&tlsCert, dnsDomains); domainErr != nil {
-			log.Fatal("Existing puma-dev CA is invalid. Please `-uninstall` and try again: ", domainErr)
-			return domainErr
+	if tlsCert, err := tls.LoadX509KeyPair(certPath, keyPath); err == nil {
+		if domainErr := EnsurePermittedDNSDomains(&tlsCert, dnsDomains); domainErr == nil {
+			log.Printf("Existing puma-dev CA keypair found for domain(s) %v. Assuming trusted.", dnsDomains)
+			CACert = &tlsCert
+			return nil
 		}
 
-		log.Printf("Existing puma-dev CA keypair found for domain(s) %v. Assuming trusted.", dnsDomains)
-		CACert = &tlsCert
-		return nil
+		if untrustErr := DeleteAllPumaDevCAFromDefaultKeychain(); untrustErr != nil {
+			return untrustErr
+		}
 	}
+
+	log.Printf("Generating new CA keypair for domain(s) %v", dnsDomains)
 
 	if certGenErr := GeneratePumaDevCertificateAuthority(certPath, keyPath, dnsDomains); certGenErr != nil {
 		return certGenErr

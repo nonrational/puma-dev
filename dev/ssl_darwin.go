@@ -35,6 +35,9 @@ func TrustCert(cert string) error {
 }
 
 func DeleteAllPumaDevCAFromDefaultKeychain() error {
+	fmt.Printf("* Removing existing Puma-dev CA certs from macOS keychain\n")
+	fmt.Printf("! There is probably a dialog open that requires you to authenticate\n")
+
 	deleteAllBashCommand := `
 	for sha in $(security find-certificate -a -c "Puma-dev CA" -Z | awk '/SHA-1/ {print $3}'); do
 		security delete-certificate -t -Z $sha || security delete-certificate -Z $sha
