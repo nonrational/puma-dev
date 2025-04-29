@@ -17,7 +17,7 @@ func TestGeneratePumaDevCertificateAuthority(t *testing.T) {
 	testKeyPath := filepath.Join(tmpPath, "testkey.pem")
 	testCertPath := filepath.Join(tmpPath, "testcert.pem")
 
-	if err := GeneratePumaDevCertificateAuthority(testCertPath, testKeyPath); err != nil {
+	if err := GeneratePumaDevCertificateAuthority(testCertPath, testKeyPath, []string{"test"}); err != nil {
 		assert.Fail(t, err.Error())
 	}
 

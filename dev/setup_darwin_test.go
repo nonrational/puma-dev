@@ -108,7 +108,9 @@ func generateLivePumaDevCertIfNotExist(t *testing.T) {
 	if !FileExists(liveCertPath) || !FileExists(liveKeyPath) {
 		MakeDirectoryOrFail(t, liveSupportPath)
 
-		if err := GeneratePumaDevCertificateAuthority(liveCertPath, liveKeyPath); err != nil {
+		testDomains := []string{"test", "localhost", "puma.dev", "puma"}
+
+		if err := GeneratePumaDevCertificateAuthority(liveCertPath, liveKeyPath, testDomains); err != nil {
 			assert.FailNow(t, err.Error())
 		}
 	}

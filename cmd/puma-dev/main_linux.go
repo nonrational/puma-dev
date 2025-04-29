@@ -85,7 +85,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	err = dev.SetupOurCert()
+	err = dev.SetupOurCert(domains)
 	if err != nil {
 		log.Fatalf("Unable to setup TLS cert: %s", err)
 	}
