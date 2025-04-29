@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -74,7 +73,7 @@ func TestCertificateInstallAndTrustHTTPS_DarwinInteractive(t *testing.T) {
 		t.Skip("interactive test must be specified with -test.run=DarwinInteractive")
 	}
 
-	appLinkDir, _ := ioutil.TempDir("", ".puma-dev")
+	appLinkDir, _ := os.MkdirTemp("", ".puma-dev")
 
 	liveSupportPath := homedir.MustExpand(dev.SupportDir)
 	liveCertPath := filepath.Join(liveSupportPath, "cert.pem")

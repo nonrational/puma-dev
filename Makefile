@@ -10,6 +10,9 @@ install:
 lint:
 	golangci-lint run
 
+# List all of the modules that are dependencies of your current module, along with the latest version available for each:
+deps:
+	go list -m -u all
 
 release:
 	rm -rf ./rel
@@ -18,8 +21,9 @@ release:
 	rm -rf ./pkg
 	mkdir ./pkg
 
-	SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) gox -cgo -os="darwin" -arch="amd64 arm64" -ldflags "-X main.Version=$$RELEASE" ./cmd/puma-dev
-	gox -os="linux" -arch="amd64" -ldflags "-X main.Version=$$RELEASE" ./cmd/puma-dev
+	SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags "-X main.Version=$$RELEASE" -o puma-dev_darwin_amd64 ./cmd/puma-dev
+	SDKROOT=$$(xcrun --sdk macosx --show-sdk-path) GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -ldflags "-X main.Version=$$RELEASE" -o puma-dev_darwin_arm64 ./cmd/puma-dev
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.Version=$$RELEASE" -o puma-dev_linux_amd64 ./cmd/puma-dev
 
 	mkdir rel/linux_amd64
 	mv -v puma-dev_linux_amd64 rel/linux_amd64/puma-dev
@@ -32,6 +36,10 @@ release:
 	mkdir rel/darwin_arm64
 	mv -v puma-dev_darwin_arm64 rel/darwin_arm64/puma-dev
 	zip -j -v "pkg/puma-dev-$$RELEASE-darwin-arm64.zip" rel/darwin_arm64/puma-dev
+
+check-test-env:
+	go version > /dev/null
+	ruby -v > /dev/null
 
 test: clean-test
 	go test -v -race -coverprofile=coverage.out -covermode=atomic ./...

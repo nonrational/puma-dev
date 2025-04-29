@@ -2,7 +2,6 @@ package dev
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,8 +58,8 @@ func TestInstallIntoSystem_FailsAsSuperuser(t *testing.T) {
 }
 
 func installIntoTestContext(t *testing.T) (string, string, func()) {
-	appLinkDir, _ := ioutil.TempDir("", ".puma-dev")
-	libDir, _ := ioutil.TempDir("", "Library")
+	appLinkDir, _ := os.MkdirTemp("", ".puma-dev")
+	libDir, _ := os.MkdirTemp("", "Library")
 	logFilePath := filepath.Join(libDir, "Logs", "puma-dev.log")
 	launchAgentDir := filepath.Join(libDir, "LaunchAgents")
 	assert.NoDirExists(t, launchAgentDir)

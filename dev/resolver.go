@@ -2,7 +2,6 @@ package dev
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -20,7 +19,7 @@ func ConfigureResolver(domains []string, port int) error {
 
 	for _, domain := range domains {
 		path := filepath.Join(etcDir, domain)
-		err := ioutil.WriteFile(path, []byte(body), 0644)
+		err := os.WriteFile(path, []byte(body), 0644)
 		if err != nil {
 			return err
 		}

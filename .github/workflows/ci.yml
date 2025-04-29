@@ -14,22 +14,21 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        go-version: [1.20.1]
+        go-version: [1.24.2]
         shell: [/bin/bash, /bin/zsh]
 
     name: ${{ matrix.os }} / go-${{ matrix.go-version }} / ${{ matrix.shell }}
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3
+          ruby-version: 3.4.2
 
       - run: gem install puma
-
-      - uses: actions/checkout@v3
 
       - if: contains(matrix.os, 'ubuntu')
         run: sudo apt install zsh
@@ -52,34 +51,31 @@ jobs:
     needs: test
 
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
         with:
-          go-version: 1.20.1
+          go-version: 1.24.2
 
       - name: Get short SHA
         id: version
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c-8)"
-
-      - run: go install github.com/mitchellh/gox@v1.0.2-0.20210311182516-8c3b2b9e647d
-      - run: echo $(go env GOPATH)/bin >> $GITHUB_PATH
-
-      - uses: actions/checkout@v3
+        run: echo VERSION_SHA8=$(echo ${GITHUB_SHA} | cut -c-8) >> $GITHUB_OUTPUT
 
       - run: make release
         env:
-          RELEASE: ${{ steps.version.outputs.sha8 }}
+          RELEASE: ${{ steps.version.outputs.VERSION_SHA8 }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-linux-amd64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-linux-amd64
           path: rel/linux_amd64/puma-dev
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-darwin-amd64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-darwin-amd64
           path: rel/darwin_amd64/puma-dev
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: puma-dev-${{ steps.version.outputs.sha8 }}-darwin-arm64
+          name: puma-dev-${{ steps.version.outputs.VERSION_SHA8 }}-darwin-arm64
           path: rel/darwin_arm64/puma-dev
